@@ -15,9 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-#ifndef MALI_GRALLOC_FORMATS_H_
-#define MALI_GRALLOC_FORMATS_H_
+#pragma once
 
 #include <system/graphics.h>
 
@@ -235,7 +233,7 @@ static inline uint64_t mali_gralloc_format_unwrap(int x)
 	}
 	else if (base_format == MALI_GRALLOC_FORMAT_INTERNAL_Y8_WRAP)
 	{
-	 	base_format = MALI_GRALLOC_FORMAT_INTERNAL_Y8;
+		base_format = MALI_GRALLOC_FORMAT_INTERNAL_Y8;
 	}
 	else if (base_format == MALI_GRALLOC_FORMAT_INTERNAL_Y16_WRAP)
 	{
@@ -396,11 +394,7 @@ void mali_gralloc_adjust_dimensions(const uint64_t internal_format,
 
 uint64_t mali_gralloc_select_format(const uint64_t req_format,
                                     const mali_gralloc_format_type type,
-                                    const uint64_t usage,
-                                    const int buffer_size,
-                                    uint64_t * const internal_format);
+                                    const uint64_t usage);
 
 bool is_subsampled_yuv(const uint32_t base_format);
 #endif
-
-#endif /* MALI_GRALLOC_FORMATS_H_ */

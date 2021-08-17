@@ -33,6 +33,8 @@ typedef uint8_t format_support_flags;
 #define F_AFBC_SWIZ ((uint8_t)1 << 2)
 
 
+#define F_BL_YUV ((uint8_t)1 << 4)
+
 typedef struct
 {
 	uint16_t width;
