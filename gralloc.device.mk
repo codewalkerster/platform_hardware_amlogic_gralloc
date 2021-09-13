@@ -50,7 +50,6 @@ ifeq ($(TARGET_APP_LAYER_USE_CONTINUOUS_BUFFER),true)
 AML_ALLOC_SCANOUT_FOR_COMPOSE :=1
 endif
 
-MESON_GR_USE_BUFFER_USAGE := $(shell expr $(PLATFORM_SDK_VERSION) \> 25)
 endif
 
 ifeq ($(GPU_ARCH),utgard)
@@ -159,7 +158,6 @@ SOONG_CONFIG_arm_gralloc := \
 	mali_gpu_support_afbc_tiled_headers \
 	mali_gpu_support_afbc_yuv_write \
 	meson_extend \
-	use_buffer_age \
 	alloc_scanout \
 	board_resolution \
 	gralloc_use_new_ion \
@@ -186,7 +184,6 @@ SOONG_CONFIG_arm_gralloc_mali_gpu_support_afbc_yuv_write := $(MALI_GPU_SUPPORT_A
 SOONG_CONFIG_arm_gralloc_meson_extend := $(GRALLOC_AML_EXTEND)
 SOONG_CONFIG_arm_gralloc_gralloc_use_new_ion := $(GRALLOC_USE_NEW_ION)
 SOONG_CONFIG_arm_gralloc_build_kernel_4_9 := $(BUILD_KERNEL_4_9)
-SOONG_CONFIG_arm_gralloc_use_buffer_age := $(MESON_GR_USE_BUFFER_USAGE)
 SOONG_CONFIG_arm_gralloc_alloc_scanout := $(AML_ALLOC_SCANOUT_FOR_COMPOSE)
 SOONG_CONFIG_arm_gralloc_board_resolution := v$(BOARD_RESOLUTION_RATIO)
 SOONG_CONFIG_arm_gralloc_mali_video_version := v$(MALI_VIDEO_VERSION)

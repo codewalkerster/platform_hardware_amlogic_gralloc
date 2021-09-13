@@ -8,12 +8,7 @@
  */
 
 #include "am_gralloc_ext.h"
-#if USE_BUFFER_USAGE
 #include <hardware/gralloc1.h>
-#else
-#include <hardware/gralloc.h>
-#include <gralloc_usage_ext.h>
-#endif
 #include <gralloc_priv.h>
 #include "gralloc_buffer_priv.h"
 #include "mali_gralloc_usages.h"
@@ -133,19 +128,12 @@ int am_gralloc_ext_set_ext_attr(const native_handle_t * hnd,
     return GRALLOC1_ERROR_NONE;
 }
 
-#if USE_BUFFER_USAGE
 #include <android/hardware/graphics/common/1.0/types.h>
 
 using android::hardware::graphics::common::V1_0::BufferUsage;
 
-uint64_t am_gralloc_get_video_overlay_producer_usage() {
-    return static_cast<uint64_t>(BufferUsage::VIDEO_DECODER);
-}
-
 uint64_t am_gralloc_get_omx_metadata_producer_usage() {
-    return static_cast<uint64_t>(BufferUsage::VIDEO_DECODER
-        | BufferUsage::CPU_READ_OFTEN
-        | BufferUsage::CPU_WRITE_OFTEN);
+    return static_cast<uint64_t>(BufferUsage::VIDEO_DECODER);
 }
 
 uint64_t am_gralloc_get_omx_osd_producer_usage() {
@@ -164,38 +152,6 @@ bool am_gralloc_is_omx_metadata_producer(uint64_t usage) {
 
     return false;
 }
-#else
-uint64_t am_gralloc_get_video_overlay_producer_usage() {
-    return GRALLOC_USAGE_AML_VIDEO_OVERLAY;
-}
-
-uint64_t am_gralloc_get_omx_metadata_producer_usage() {
-    return (GRALLOC_USAGE_AML_VIDEO_OVERLAY ||
-            GRALLOC_USAGE_SW_READ_OFTEN ||
-            GRALLOC_USAGE_SW_WRITE_OFTEN);
-}
-
-uint64_t am_gralloc_get_omx_osd_producer_usage() {
-    return (GRALLOC_USAGE_AML_VIDEO_OVERLAY ||
-            GRALLOC_USAGE_HW_RENDER);
-}
-
-bool am_gralloc_is_omx_metadata_producer(uint64_t usage) {
-    if (!am_gralloc_is_omx_osd_producer(usage)) {
-        uint64_t omx_metadata_usage = am_gralloc_get_omx_metadata_producer_usage();
-        if (((usage & omx_metadata_usage) == omx_metadata_usage)
-#if GRALLOC_USE_GRALLOC1_API == 1
-            && !(usage & GRALLOC1_PRODUCER_USAGE_GPU_RENDER_TARGET)) {
-#else
-            && !(usage & GRALLOC_USAGE_HW_RENDER)) {
-#endif
-            return true;
-        }
-    }
-
-    return false;
-}
-#endif
 
 uint64_t am_gralloc_get_video_decoder_quarter_buffer_usage() {
     uint64_t omx_metadata_usage = am_gralloc_get_omx_metadata_producer_usage();

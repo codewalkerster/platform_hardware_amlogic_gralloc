@@ -1376,8 +1376,7 @@ static int am_gralloc_exec_uvm_policy(
 	agu->uvm_flag = UVM_IMM_ALLOC;
 	agu->uvm_buffer_flag = 0;
 
-	if (am_gralloc_is_video_overlay_extend_usage(usage) ||
-		am_gralloc_is_omx_metadata_extend_usage(usage) ||
+	if (am_gralloc_is_omx_metadata_extend_usage(usage) ||
 		am_gralloc_is_omx_osd_extend_usage(usage)) {
 
 		agu->uvm_buffer_flag |= private_handle_t::PRIV_FLAGS_UVM_BUFFER;
@@ -1521,10 +1520,7 @@ void am_gralloc_set_ion_flags(ion_heap_type heap_type, uint64_t usage,
 		{
 			*priv_heap_flag |= am_gralloc_get_omx_metadata_extend_flag();
 		}
-		else if (am_gralloc_is_video_overlay_extend_usage(usage))
-		{
-			*priv_heap_flag |= am_gralloc_get_video_overlay_extend_flag();
-		}
+
 		if (am_gralloc_is_secure_extend_usage(usage))
 		{
 		    *priv_heap_flag |= am_gralloc_get_secure_extend_flag();
