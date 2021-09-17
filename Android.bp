@@ -156,7 +156,6 @@ cc_library_shared {
         "-DGRALLOC_AML_EXTEND",
     ],
     include_dirs: [
-        "hardware/libhardware/include",
         "hardware/amlogic/gralloc/src",
     ],
     srcs: [
@@ -171,6 +170,7 @@ cc_library_shared {
         "android.hardware.graphics.mapper@4.0",
         "libgralloctypes",
         "libhidlbase",
+        "libhardware",
     ],
 
     export_include_dirs: [
@@ -184,10 +184,7 @@ cc_library_static {
         "-DGRALLOC_AML_EXTEND",
     ],
     include_dirs: [
-       "system/core/libutils/include",
-       "hardware/libhardware/include",
        "hardware/amlogic/gralloc/src",
-       "system/memory/libion/kernel-headers",
     ],
     srcs: [
         "amlogic/am_gralloc_ext.cpp"
@@ -196,6 +193,8 @@ cc_library_static {
         "liblog",
         "libcutils",
         "libutils",
+        "libion",
+        "libhardware",
         "android.hardware.graphics.common@1.0",
         "android.hardware.graphics.mapper@4.0",
         "arm.graphics-V1-ndk_platform",
