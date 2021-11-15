@@ -1317,17 +1317,36 @@ bool is_android_yuv_format(int req_format)
 	return rval;
 }
 
-static int am_gralloc_exec_omx_policy(int size, int scalar) {
+static int am_gralloc_exec_omx_policy(
+					int size,
+					int scalar,
+					buffer_descriptor_t *max_bufDescriptor) {
 	char prop[PROPERTY_VALUE_MAX];
 	size /= scalar * scalar;
+
+	/*
+	 * support for 8k video
+	 * Set max 8k size if bigger then 4k
+	 */
+	if ((max_bufDescriptor->width * max_bufDescriptor->height) >
+			(V4L2_DECODER_BUFFER_MAX_WIDTH * V4L2_DECODER_BUFFER_MAX_HEIGHT))
+		size = V4L2_DECODER_BUFFER_8k_MAX_WIDTH * V4L2_DECODER_BUFFER_8k_MAX_HEIGHT * 3 / 2;
 	/*
 	 * workaround for unsupported 4k video play on some platforms
 	 */
-	if (property_get("ro.vendor.platform.support.4k", prop, NULL) > 0)
-	{
+	if (property_get("ro.vendor.platform.support.4k", prop, NULL) > 0) {
 		if (strstr(prop, "false"))
-		{
 			size = (GRALLOC_ALIGN(1920/scalar, 64) * GRALLOC_ALIGN(1080/scalar, 64)) * 3 / 2;
+	}
+	/*
+	 * workaround to alloc fixed 1080p buffer for 1/16 usage
+	 * if vendor.media.omx2.1080p_buffer is true
+	 */
+	if (scalar == 4 &&
+		property_get("vendor.media.omx2.1080p_buffer", prop, NULL) > 0) {
+		if (strstr(prop, "true")) {
+			size = (GRALLOC_ALIGN(1920, 64) * GRALLOC_ALIGN(1080, 64)) * 3 / 2;
+			MALI_GRALLOC_LOGW("[gralloc]: allocate fixed 1080p buffer for 1/16 usage size:%d", size);
 		}
 	}
 	return size;
@@ -1383,11 +1402,10 @@ static int am_gralloc_exec_uvm_policy(
 		if (need_do_width_height_align(usage, max_bufDescriptor->width, max_bufDescriptor->height))
 			aligned_bit = 64;
 
-		if ((max_bufDescriptor->width * max_bufDescriptor->height) > (V4L2_DECODER_BUFFER_MAX_WIDTH * V4L2_DECODER_BUFFER_MAX_HEIGHT)) {
-				v4l2_dec_max_buf_size = V4L2_DECODER_BUFFER_8k_MAX_WIDTH * V4L2_DECODER_BUFFER_8k_MAX_HEIGHT * 3 / 2;
-		}
-
-		v4l2_dec_max_buf_size = am_gralloc_exec_omx_policy(v4l2_dec_max_buf_size, buf_scalar);
+		v4l2_dec_max_buf_size = am_gralloc_exec_omx_policy(
+									v4l2_dec_max_buf_size,
+									buf_scalar,
+									max_bufDescriptor);
 
 		struct uvm_alloc_data uad = {
 			.size = (int)max_bufDescriptor->size,
