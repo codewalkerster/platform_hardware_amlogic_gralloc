@@ -64,7 +64,7 @@ const format_info_t formats[] = {
 		.npln = 1, .ncmp = { 3, 0, 0 }, .bps = 8, .bpp_afbc = { 0, 0, 0 }, .bpp = { 32, 0, 0 },
 		.hsub = 0, .vsub = 0, .align_w = 1, .align_h = 1, ALIGN_W_CPU_DEFAULT,
 		.tile_size = 1, .has_alpha = false, .is_rgb = true, .is_yuv = false,
-		.afbc = true, .linear = true, .yuv_transform = true, .flex = true,
+		.afbc = false, .linear = true, .yuv_transform = true, .flex = true,
 	},
 	{
 		.id = MALI_GRALLOC_FORMAT_INTERNAL_RGBA_1010102,
