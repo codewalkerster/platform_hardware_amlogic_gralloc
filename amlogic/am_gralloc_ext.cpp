@@ -649,7 +649,7 @@ uint64_t am_gralloc_get_enc_coherent_usage() {
 }
 
 
-int am_gralloc_set_ext_attr(native_handle_t * hnd, uint32_t attr, int val) {
+int am_gralloc_set_ext_attr(const native_handle_t * hnd, uint32_t attr, int val) {
     private_handle_t * buffer = hnd ? private_handle_t::dynamicCast(hnd) : NULL;
     int ret = GRALLOC1_ERROR_NONE;
 

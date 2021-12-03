@@ -161,7 +161,7 @@ enum
 /*
  * set extend info key-value
  */
-int am_gralloc_set_ext_attr(native_handle_t *hnd, uint32_t attr, int val);
+int am_gralloc_set_ext_attr(const native_handle_t *hnd, uint32_t attr, int val);
 bool am_gralloc_get_omx_buffer_sequence(const native_handle_t *hnd, int *val);
 
 #endif/*AM_GRALLOC_EXT_H*/
