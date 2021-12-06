@@ -1442,8 +1442,7 @@ enum ion_heap_type am_gralloc_pick_ion_heap(
 	}
 
 	if (am_gralloc_is_omx_osd_extend_usage(usage) ||
-		(usage & GRALLOC_USAGE_HW_CAMERA_WRITE) ||
-		(usage & GRALLOC_USAGE_HW_VIDEO_ENCODER))
+		(usage & GRALLOC1_PRODUCER_USAGE_CAMERA))
 	{
 		ret = ION_HEAP_TYPE_CUSTOM;
 		goto out;
