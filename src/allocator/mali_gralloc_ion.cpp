@@ -1322,7 +1322,6 @@ static int am_gralloc_exec_omx_policy(
 					int scalar,
 					buffer_descriptor_t *max_bufDescriptor) {
 	char prop[PROPERTY_VALUE_MAX];
-	size /= scalar * scalar;
 
 	/*
 	 * support for 8k video
@@ -1331,6 +1330,9 @@ static int am_gralloc_exec_omx_policy(
 	if ((max_bufDescriptor->width * max_bufDescriptor->height) >
 			(V4L2_DECODER_BUFFER_MAX_WIDTH * V4L2_DECODER_BUFFER_MAX_HEIGHT))
 		size = V4L2_DECODER_BUFFER_8k_MAX_WIDTH * V4L2_DECODER_BUFFER_8k_MAX_HEIGHT * 3 / 2;
+
+	size /= scalar * scalar;
+
 	/*
 	 * workaround for unsupported 4k video play on some platforms
 	 */
