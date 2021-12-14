@@ -521,9 +521,10 @@ bool ion_device::check_buffers_sharable(const gralloc_buffer_descriptor_t *descr
 
 //meson graphics changes start
 #ifdef GRALLOC_AML_EXTEND
-        heap_type = am_gralloc_pick_ion_heap(bufDescriptor, usage);
+		heap_type = am_gralloc_pick_ion_heap(bufDescriptor, usage);
+		MALI_GRALLOC_LOGV("alloc from heap:%d", heap_type);
 #else
-        heap_type = pick_ion_heap(usage);
+		heap_type = pick_ion_heap(usage);
 #endif
 //meson graphics changes end
 
@@ -903,6 +904,7 @@ int mali_gralloc_ion_allocate(const gralloc_buffer_descriptor_t *descriptors,
 //meson graphics changes start
 #ifdef GRALLOC_AML_EXTEND
 		heap_type = am_gralloc_pick_ion_heap(max_bufDescriptor, usage);
+		MALI_GRALLOC_LOGV("alloc from heap:%d", heap_type);
 #else
 		heap_type = dev->pick_ion_heap(usage);
 #endif

@@ -601,7 +601,7 @@ static format_support_flags is_format_supported(const int32_t fmt_idx,
 	/* Determine format support from table. */
 	format_support_flags f_flags = ip_supports_base_format(producers, consumers,
 	                                                       &formats_ip_support[ip_fmt_idx]);
-
+	MALI_GRALLOC_LOGV("%s f_flags: %d ip_fmt_idx:%d", __FUNCTION__, f_flags, ip_fmt_idx);
 	/* Determine whether producers/consumers support required AFBC features. */
 	if (f_flags & F_AFBC)
 	{
@@ -1009,6 +1009,7 @@ bool get_supported_format(const uint32_t base_format,
 {
 	const int32_t fmt_idx = get_format_index(base_format);
 	const int32_t ip_fmt_idx = get_ip_format_index(base_format);
+	MALI_GRALLOC_LOGV("%s fmt_idx: %d ip_fmt_idx:%d", __FUNCTION__, fmt_idx, ip_fmt_idx);
 	assert(fmt_idx >= 0);
 	if (ip_fmt_idx == -1)
 	{
