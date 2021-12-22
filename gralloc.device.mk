@@ -150,52 +150,27 @@ endif
 GRALLOC_API_VERSION?=v300
 
 # Setup configuration in Soong namespace
-SOONG_CONFIG_NAMESPACES += arm_gralloc
-SOONG_CONFIG_arm_gralloc := \
-	mali_gpu_support_afbc_basic \
-	mali_gpu_support_afbc_splitblk \
-	mali_gpu_support_afbc_wideblk \
-	mali_gpu_support_afbc_tiled_headers \
-	mali_gpu_support_afbc_yuv_write \
-	meson_extend \
-	alloc_scanout \
-	board_resolution \
-	gralloc_use_new_ion \
-	build_kernel_4_9 \
-	mali_video_version \
-	mali_display_version \
-	gralloc_use_ion_dma_heap \
-	gralloc_use_ion_compound_page_heap \
-	gralloc_init_afbc \
-	gralloc_hwc_force_bgra_8888 \
-	gralloc_hwc_fb_disable_afbc \
-	gralloc_arm_no_external_afbc \
-	gralloc_use_ion_dmabuf_sync \
-	gralloc_camera_write_raw16 \
-	mali_gralloc_api_tests \
-	gralloc_api_version \
-	meson_gpu_arch
-
-SOONG_CONFIG_arm_gralloc_mali_gpu_support_afbc_basic := $(MALI_GPU_SUPPORT_AFBC_BASIC)
-SOONG_CONFIG_arm_gralloc_mali_gpu_support_afbc_splitblk := $(MALI_GPU_SUPPORT_AFBC_SPLITBLK)
-SOONG_CONFIG_arm_gralloc_mali_gpu_support_afbc_wideblk := $(MALI_GPU_SUPPORT_AFBC_WIDEBLK)
-SOONG_CONFIG_arm_gralloc_mali_gpu_support_afbc_tiled_headers := $(MALI_GPU_SUPPORT_AFBC_TILED_HEADERS)
-SOONG_CONFIG_arm_gralloc_mali_gpu_support_afbc_yuv_write := $(MALI_GPU_SUPPORT_AFBC_YUV_WRITE)
-SOONG_CONFIG_arm_gralloc_meson_extend := $(GRALLOC_AML_EXTEND)
-SOONG_CONFIG_arm_gralloc_gralloc_use_new_ion := $(GRALLOC_USE_NEW_ION)
-SOONG_CONFIG_arm_gralloc_build_kernel_4_9 := $(BUILD_KERNEL_4_9)
-SOONG_CONFIG_arm_gralloc_alloc_scanout := $(AML_ALLOC_SCANOUT_FOR_COMPOSE)
-SOONG_CONFIG_arm_gralloc_board_resolution := v$(BOARD_RESOLUTION_RATIO)
-SOONG_CONFIG_arm_gralloc_mali_video_version := v$(MALI_VIDEO_VERSION)
-SOONG_CONFIG_arm_gralloc_mali_display_version := v$(MALI_DISPLAY_VERSION)
-SOONG_CONFIG_arm_gralloc_gralloc_use_ion_dma_heap := $(GRALLOC_USE_ION_DMA_HEAP)
-SOONG_CONFIG_arm_gralloc_gralloc_use_ion_compound_page_heap := $(GRALLOC_USE_ION_COMPOUND_PAGE_HEAP)
-SOONG_CONFIG_arm_gralloc_gralloc_init_afbc := $(GRALLOC_INIT_AFBC)
-SOONG_CONFIG_arm_gralloc_gralloc_hwc_force_bgra_8888 := $(GRALLOC_HWC_FORCE_BGRA_8888)
-SOONG_CONFIG_arm_gralloc_gralloc_hwc_fb_disable_afbc := $(GRALLOC_HWC_FB_DISABLE_AFBC)
-SOONG_CONFIG_arm_gralloc_gralloc_arm_no_external_afbc := $(GRALLOC_ARM_NO_EXTERNAL_AFBC)
-SOONG_CONFIG_arm_gralloc_gralloc_use_ion_dmabuf_sync := $(GRALLOC_USE_ION_DMABUF_SYNC)
-SOONG_CONFIG_arm_gralloc_gralloc_camera_write_raw16 := $(GRALLOC_CAMERA_WRITE_RAW16)
-SOONG_CONFIG_arm_gralloc_mali_gralloc_api_tests := $(MALI_GRALLOC_API_TESTS)
-SOONG_CONFIG_arm_gralloc_gralloc_api_version := $(GRALLOC_API_VERSION)
-SOONG_CONFIG_arm_gralloc_meson_gpu_arch := $(MESON_GPU_ARCH)
+$(call soong_config_set,arm_gralloc,mali_gpu_support_afbc_basic,$(MALI_GPU_SUPPORT_AFBC_BASIC))
+$(call soong_config_set,arm_gralloc,mali_gpu_support_afbc_splitblk,$(MALI_GPU_SUPPORT_AFBC_SPLITBLK))
+$(call soong_config_set,arm_gralloc,mali_gpu_support_afbc_wideblk,$(MALI_GPU_SUPPORT_AFBC_WIDEBLK))
+$(call soong_config_set,arm_gralloc,mali_gpu_support_afbc_tiled_headers,$(MALI_GPU_SUPPORT_AFBC_TILED_HEADERS))
+$(call soong_config_set,arm_gralloc,mali_gpu_support_afbc_yuv_write,$(MALI_GPU_SUPPORT_AFBC_YUV_WRITE))
+$(call soong_config_set,arm_gralloc,meson_extend,$(GRALLOC_AML_EXTEND))
+$(call soong_config_set,arm_gralloc,gralloc_use_new_ion,$(GRALLOC_USE_NEW_ION))
+$(call soong_config_set,arm_gralloc,build_kernel_4_9,$(BUILD_KERNEL_4_9))
+$(call soong_config_set,arm_gralloc,use_buffer_age,$(MESON_GR_USE_BUFFER_USAGE))
+$(call soong_config_set,arm_gralloc,alloc_scanout,$(AML_ALLOC_SCANOUT_FOR_COMPOSE))
+$(call soong_config_set,arm_gralloc,board_resolution,v$(BOARD_RESOLUTION_RATIO))
+$(call soong_config_set,arm_gralloc,mali_video_version,v$(MALI_VIDEO_VERSION))
+$(call soong_config_set,arm_gralloc,mali_display_version,v$(MALI_DISPLAY_VERSION))
+$(call soong_config_set,arm_gralloc,gralloc_use_ion_dma_heap,$(GRALLOC_USE_ION_DMA_HEAP))
+$(call soong_config_set,arm_gralloc,gralloc_use_ion_compound_page_heap,$(GRALLOC_USE_ION_COMPOUND_PAGE_HEAP))
+$(call soong_config_set,arm_gralloc,gralloc_init_afbc,$(GRALLOC_INIT_AFBC))
+$(call soong_config_set,arm_gralloc,gralloc_hwc_force_bgra_8888,$(GRALLOC_HWC_FORCE_BGRA_8888))
+$(call soong_config_set,arm_gralloc,gralloc_hwc_fb_disable_afbc,$(GRALLOC_HWC_FB_DISABLE_AFBC))
+$(call soong_config_set,arm_gralloc,gralloc_arm_no_external_afbc,$(GRALLOC_ARM_NO_EXTERNAL_AFBC))
+$(call soong_config_set,arm_gralloc,gralloc_use_ion_dmabuf_sync,$(GRALLOC_USE_ION_DMABUF_SYNC))
+$(call soong_config_set,arm_gralloc,gralloc_camera_write_raw16,$(GRALLOC_CAMERA_WRITE_RAW16))
+$(call soong_config_set,arm_gralloc,mali_gralloc_api_tests,$(MALI_GRALLOC_API_TESTS))
+$(call soong_config_set,arm_gralloc,gralloc_api_version,$(GRALLOC_API_VERSION))
+$(call soong_config_set,arm_gralloc,meson_gpu_arch,$(MESON_GPU_ARCH))
