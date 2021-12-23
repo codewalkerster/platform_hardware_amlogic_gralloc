@@ -24,6 +24,10 @@
 #include <unordered_set>
 #include <algorithm>
 #include <functional>
+#include <sys/stat.h>
+#include <unistd.h>
+#include "mali_gralloc_buffer.h"
+#include "mali_gralloc_log.h"
 
 /* An unordered set to internally store / retrieve imported buffer handles */
 class RegisteredHandlePool

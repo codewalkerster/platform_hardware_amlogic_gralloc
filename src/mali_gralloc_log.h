@@ -26,11 +26,13 @@
 // #define AML_GRALLOC_DEBUG
 #ifdef AML_GRALLOC_DEBUG
 #define AML_GRALLOC_LOGI(...) ALOGI(__VA_ARGS__)
+#define MALI_GRALLOC_LOGV(...) ALOGI(__VA_ARGS__)
+#else
+#define MALI_GRALLOC_LOGV(...) ALOGV(__VA_ARGS__)
 #endif
 
 /* Delegate logging to Android */
 #define MALI_GRALLOC_LOGI(...) ALOGI(__VA_ARGS__)
-#define MALI_GRALLOC_LOGV(...) ALOGV(__VA_ARGS__)
 #define MALI_GRALLOC_LOGW(...) ALOGW(__VA_ARGS__)
 #define MALI_GRALLOC_LOGE(...) ALOGE(__VA_ARGS__)
 

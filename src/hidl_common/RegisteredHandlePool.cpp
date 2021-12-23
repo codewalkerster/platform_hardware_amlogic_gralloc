@@ -32,6 +32,60 @@ native_handle_t* RegisteredHandlePool::remove(void* buffer)
     return bufPool.erase(bufferHandle) == 1 ? bufferHandle : nullptr;
 }
 
+#ifdef GRALLOC_AML_EXTEND
+void RegisteredHandlePool::for_each(std::function<void(const buffer_handle_t &)> fn)
+{
+    std::lock_guard<std::mutex> lock(mutex);
+    std::for_each(bufPool.begin(), bufPool.end(), fn);
+}
+
+static bool getINodeFromFd(int32_t fd, uint64_t *ino)
+{
+    struct stat st;
+    int ret = fstat(fd, &st);
+
+    if (ret == -1) {
+        return false;
+    } else {
+        *ino = st.st_ino;
+        return true;
+    }
+}
+
+static bool compare_fd(int32_t inFd, int32_t poolFd)
+{
+    uint64_t inFd_ino = 0;
+    uint64_t poolFd_ino = 1;
+
+    if (!getINodeFromFd(inFd, &inFd_ino) ||
+        !getINodeFromFd(poolFd, &poolFd_ino)) {
+        return false;
+    } else {
+        if (inFd_ino == poolFd_ino) {
+            MALI_GRALLOC_LOGV("%s match fd! inFd_ino:%llu poolFd_ino:%llu",
+                __FUNCTION__, inFd_ino, poolFd_ino);
+            return true;
+        }
+    }
+    return false;
+}
+
+buffer_handle_t RegisteredHandlePool::get(const void* buffer)
+{
+    buffer_handle_t buf_handle = nullptr;
+    const private_handle_t *InHandle = static_cast<const private_handle_t *>(buffer);
+
+    for_each([&buf_handle, InHandle](buffer_handle_t buffer) {
+        const private_handle_t *poolHandle = static_cast<const private_handle_t *>(buffer);
+        if (compare_fd(InHandle->share_fd, poolHandle->share_fd)) {
+            buf_handle = buffer;
+            return;
+        }
+    });
+    return buf_handle;
+}
+
+#else
 buffer_handle_t RegisteredHandlePool::get(const void* buffer)
 {
     auto bufferHandle = static_cast<buffer_handle_t>(buffer);
@@ -45,3 +99,5 @@ void RegisteredHandlePool::for_each(std::function<void(const buffer_handle_t &)>
     std::lock_guard<std::mutex> lock(mutex);
     std::for_each(bufPool.begin(), bufPool.end(), fn);
 }
+#endif
+
