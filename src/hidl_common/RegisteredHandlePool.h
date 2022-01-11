@@ -45,6 +45,12 @@ public:
 	/* Applies a function to each buffer handle */
 	void for_each(std::function<void(const buffer_handle_t &)> fn);
 
+	/* Retrieves the buffer handle from internal list */
+	buffer_handle_t aml_get(const void* buffer);
+
+	/* Applies a function to each buffer handle */
+	void aml_for_each(std::function<void(const buffer_handle_t &)> fn);
+
 private:
 	std::mutex mutex;
 	std::unordered_set<buffer_handle_t> bufPool;

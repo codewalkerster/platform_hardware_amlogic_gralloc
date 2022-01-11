@@ -431,6 +431,7 @@ void unlock(void* buffer, IMapper::unlock_cb hidl_cb)
 	}
 
 	int fenceFd;
+	MALI_GRALLOC_LOGV("%s try to unlock bufferHandle(%p)", __FUNCTION__, bufferHandle);
 	const Error error = unlockBuffer(bufferHandle, &fenceFd);
 	if (error == Error::NONE)
 	{
@@ -787,9 +788,15 @@ void get(void *buffer, const IMapper::MetadataType &metadataType, IMapper::get_c
 	const private_handle_t *handle = static_cast<const private_handle_t *>(gRegisteredHandles->get(buffer));
 	if (handle == nullptr)
 	{
-		MALI_GRALLOC_LOGE("Buffer: %p has not been registered with Gralloc", buffer);
-		hidl_cb(Error::BAD_BUFFER, hidl_vec<uint8_t>());
-		return;
+		MALI_GRALLOC_LOGV("%s fallback to check again", __FUNCTION__);
+		/* fallback to check if exists a bufhandle's fd is the same with input handle*/
+		handle = static_cast<const private_handle_t *>(gRegisteredHandles->aml_get(buffer));
+		if (handle == nullptr)
+		{
+			MALI_GRALLOC_LOGE("Buffer: %p has not been registered with Gralloc", buffer);
+			hidl_cb(Error::BAD_BUFFER, hidl_vec<uint8_t>());
+			return;
+		}
 	}
 	get_metadata(handle, metadataType, hidl_cb);
 }
@@ -800,8 +807,14 @@ Error set(void *buffer, const IMapper::MetadataType &metadataType, const hidl_ve
 	const private_handle_t *handle = static_cast<const private_handle_t *>(gRegisteredHandles->get(buffer));
 	if (handle == nullptr)
 	{
-		MALI_GRALLOC_LOGE("Buffer: %p has not been registered with Gralloc", buffer);
-		return Error::BAD_BUFFER;
+		MALI_GRALLOC_LOGV("%s fallback to check again", __FUNCTION__);
+		/* fallback to check if exists a bufhandle's fd is the same with input handle*/
+		handle = static_cast<const private_handle_t *>(gRegisteredHandles->aml_get(buffer));
+		if (handle == nullptr)
+		{
+			MALI_GRALLOC_LOGE("Buffer: %p has not been registered with Gralloc", buffer);
+			return Error::BAD_BUFFER;
+		}
 	}
 	return set_metadata(handle, metadataType, metadata);
 }
