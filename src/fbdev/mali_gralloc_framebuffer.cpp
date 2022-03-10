@@ -416,7 +416,7 @@ static int fb_alloc_framebuffer_locked(mali_gralloc_module *m, uint64_t consumer
 		uint64_t newConsumerUsage = (consumer_usage & ~(static_cast<uint64_t>(GRALLOC_USAGE_HW_FB)));
 		uint64_t newProducerUsage = (producer_usage & ~(static_cast<uint64_t>(GRALLOC_USAGE_HW_FB))) |
 		                                               static_cast<uint64_t>(GRALLOC_USAGE_HW_2D);
-		MALI_GRALLOC_LOGE("Fallback to single buffering. Unable to map framebuffer memory to handle:%p", hnd);
+		MALI_GRALLOC_LOGE("Fallback to single buffering. Unable to map framebuffer memory to handle:%p", pHandle);
 		*byte_stride = GRALLOC_ALIGN(m->finfo.line_length, 64);
 		return fb_alloc_from_ion_module(m, m->info.xres, m->info.yres, *byte_stride,
 		                                alignedFramebufferSize, newConsumerUsage, newProducerUsage, pHandle);
