@@ -76,7 +76,10 @@ cc_library_shared {
     header_libs: [
         "libgralloc_headers",
     ],
-    srcs: ["am_gralloc_ext.cpp"],
+    srcs: [
+        "am_gralloc_ext.cpp",
+        "am_gralloc_uvm_ext.cpp",
+    ],
     export_include_dirs: ["."],
 }
 
@@ -107,7 +110,10 @@ cc_library_static {
     header_libs: [
         "libgralloc_headers",
     ],
-    srcs: ["am_gralloc_ext.cpp"],
+    srcs: [
+        "am_gralloc_ext.cpp",
+        "am_gralloc_uvm_ext.cpp",
+    ],
 }
 
 // Internal static lib for amlogic extend gralloc
