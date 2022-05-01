@@ -569,6 +569,10 @@ Error set_metadata(const private_handle_t *handle, const IMapper::MetadataType &
 			err = android::gralloc4::decodeDataspace(metadata, &dataspace);
 			if (!err)
 			{
+				if ((int)dataspace == HAL_DATASPACE_BT601_525) {
+					MALI_GRALLOC_LOGV("%s DATASPACE:%d", __FUNCTION__, dataspace);
+					break;
+				}
 				set_dataspace(handle, dataspace);
 			}
 			break;

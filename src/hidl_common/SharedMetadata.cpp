@@ -329,7 +329,8 @@ android::status_t set_smpte2094_40(const private_handle_t *hnd, const std::optio
 {
 	if (!smpte2094_40.has_value() || smpte2094_40->size() == 0)
 	{
-		MALI_GRALLOC_LOGE("Empty SMPTE 2094-40 data");
+		MALI_GRALLOC_LOGW("Set empty SMPTE 2094-40 data has_value:%d size:%d",
+				smpte2094_40.has_value(), smpte2094_40->size() == 0);
 		return android::BAD_VALUE;
 	}
 

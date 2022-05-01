@@ -915,6 +915,8 @@ void get_format_dataspace(uint32_t base_format,
 	*yuv_info = MALI_YUV_NO_INFO;
 
 	const int32_t format_idx = get_format_index(base_format);
+	MALI_GRALLOC_LOGV("%s format:%d w*h [%d*%d] format_idx:%d usage=0x%" PRIx64,
+		__FUNCTION__, base_format, width, height, format_idx, usage);
 	if (format_idx < 0)
 	{
 		return;
@@ -1001,6 +1003,8 @@ void get_format_dataspace(uint32_t base_format,
 		/* Default RGB dataspace. Expected by Mapper VTS. */
 		*dataspace = static_cast<android_dataspace_t>(HAL_DATASPACE_UNKNOWN);
 	}
+	MALI_GRALLOC_LOGV("color_space:%" PRIx64 " range:%" PRIx64 " *yuv_info:%d",
+			color_space, range, *yuv_info);
 }
 
 

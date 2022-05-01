@@ -78,7 +78,7 @@ static bool validateDescriptorInfo(const BufferDescriptorInfoT &descriptorInfo)
 	if (descriptorInfo.usage & ~validUsageBits)
 	{
 		/* It is possible that application uses private usage bits so just warn in this case. */
-		MALI_GRALLOC_LOGW("Buffer descriptor with invalid usage bits 0x%" PRIx64,
+		MALI_GRALLOC_LOGV("Buffer descriptor with invalid usage bits 0x%" PRIx64,
 		       descriptorInfo.usage & ~validUsageBits);
 	}
 
