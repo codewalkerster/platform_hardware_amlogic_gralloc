@@ -107,6 +107,7 @@ cc_library_shared {
 		"libamgralloc_internal_static",
 	],
 	shared_libs: [
+		"libutilscallstack",
 		"android.hardware.graphics.mapper@4.0",
 	],
 	srcs: [

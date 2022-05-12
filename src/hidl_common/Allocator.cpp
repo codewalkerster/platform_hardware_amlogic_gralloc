@@ -111,6 +111,7 @@ void allocate(const buffer_descriptor_t &bufferDescriptor, uint32_t count, IAllo
 			                     &hnd->yuv_info);
 
 #if GRALLOC_USE_SHARED_METADATA
+			MALI_GRALLOC_LOGV("%s set_dataspace %d", __FUNCTION__, dataspace);
 			mapper::common::set_dataspace(hnd, static_cast<mapper::common::Dataspace>(dataspace));
 #else
 			int temp_dataspace = static_cast<int>(dataspace);

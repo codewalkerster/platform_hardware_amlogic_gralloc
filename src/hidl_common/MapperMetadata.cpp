@@ -28,6 +28,8 @@
 #include "aidl/arm/graphics/ArmMetadataType.h"
 #include <vector>
 
+#include <utils/CallStack.h>
+
 namespace arm
 {
 namespace mapper
@@ -427,6 +429,8 @@ void get_metadata(const private_handle_t *handle, const IMapper::MetadataType &m
 			std::optional<Dataspace> dataspace;
 			get_dataspace(handle, &dataspace);
 			err = android::gralloc4::encodeDataspace(dataspace.value_or(Dataspace::UNKNOWN), &vec);
+			MALI_GRALLOC_LOGV("%s DATASPACE:%d encodeDataspace return %d",
+				__FUNCTION__, dataspace.value(), err);
 			break;
 		}
 		case StandardMetadataType::BLEND_MODE:
@@ -555,6 +559,18 @@ void get_metadata(const private_handle_t *handle, const IMapper::MetadataType &m
 	}
 }
 
+static bool isSupportedDataSpace(Dataspace dataspace)
+{
+	switch (static_cast<android_dataspace_t>(dataspace) & 0xffff)
+	{
+	case HAL_DATASPACE_UNKNOWN:
+	case HAL_DATASPACE_BT601_525:
+		return false;
+	default:
+		return true;
+	}
+}
+
 Error set_metadata(const private_handle_t *handle, const IMapper::MetadataType &metadataType,
                    const hidl_vec<uint8_t> &metadata)
 {
@@ -569,9 +585,10 @@ Error set_metadata(const private_handle_t *handle, const IMapper::MetadataType &
 			err = android::gralloc4::decodeDataspace(metadata, &dataspace);
 			if (!err)
 			{
-				if ((int)dataspace == HAL_DATASPACE_BT601_525) {
-					MALI_GRALLOC_LOGV("%s DATASPACE:%d", __FUNCTION__, dataspace);
-					break;
+				MALI_GRALLOC_LOGV("%s DATASPACE:%d", __FUNCTION__, dataspace);
+				//android::CallStack c(LOG_TAG);
+				if (!isSupportedDataSpace(dataspace)) {
+					return Error::UNSUPPORTED;
 				}
 				set_dataspace(handle, dataspace);
 			}
