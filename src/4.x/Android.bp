@@ -100,13 +100,13 @@ cc_library_shared {
 	name: "android.hardware.graphics.mapper@4.0-impl-arm",
 	defaults: [
 		"arm_gralloc_api_4x_defaults",
+		"gralloc_go_defaults",
 	],
 	static_libs: [
 		"libgralloc_drmutils",
 		"libamgralloc_internal_static",
 	],
 	shared_libs: [
-		"arm.graphics-V1-ndk_platform",
 		"android.hardware.graphics.mapper@4.0",
 	],
 	srcs: [

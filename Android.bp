@@ -27,6 +27,29 @@ package {
     default_applicable_licenses: ["hardware_amlogic_license"],
 }
 
+bootstrap_go_package {
+    name: "gralloc",
+    pkgPath: "android/soong/hw_gralloc",
+    deps: [
+        "blueprint",
+        "soong",
+        "soong-android",
+        "soong-cc",
+        "soong-genrule",
+        "blueprint-bootstrap",
+        "soong-cc-config"
+    ],
+    srcs: [
+        "gralloc.go",
+    ],
+
+    pluginFor: ["soong_build"],
+}
+
+hw_gralloc_go_defaults {
+    name: "gralloc_go_defaults",
+}
+
 soong_config_module_type {
     name: "arm_gralloc_cc_defaults",
     module_type: "cc_defaults",
@@ -78,8 +101,6 @@ arm_gralloc_cc_defaults {
     vendor: true,
     proprietary: true,
     cflags: [
-        "-ldl",
-        "-Wundef",
         "-Werror",
         "-DGRALLOC_LIBRARY_BUILD=1",
         "-DDISABLE_FRAMEBUFFER_HAL=1",
@@ -166,6 +187,9 @@ arm_gralloc_cc_defaults {
 
 cc_library_shared {
     name: "libamgralloc_ext@2",
+	defaults: [
+    "gralloc_go_defaults",
+    ],
     vendor: true,
     cflags: [
         "-DGRALLOC_AML_EXTEND",
@@ -181,7 +205,6 @@ cc_library_shared {
         "libcutils",
         "libutils",
         "android.hardware.graphics.common@1.0",
-        "arm.graphics-V1-ndk_platform",
         "android.hardware.graphics.mapper@4.0",
         "libgralloctypes",
         "libhidlbase",
@@ -195,6 +218,9 @@ cc_library_shared {
 
 cc_library_static {
     name: "libamgralloc_ext_static@2",
+	defaults: [
+    "gralloc_go_defaults",
+    ],
     cflags: [
         "-DGRALLOC_AML_EXTEND",
     ],
@@ -212,7 +238,6 @@ cc_library_static {
         "libhardware",
         "android.hardware.graphics.common@1.0",
         "android.hardware.graphics.mapper@4.0",
-        "arm.graphics-V1-ndk_platform",
         "libgralloctypes",
         "libhidlbase",
     ],

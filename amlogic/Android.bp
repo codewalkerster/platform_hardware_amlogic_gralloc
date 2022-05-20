@@ -48,6 +48,9 @@ license {
 
 cc_library_shared {
     name: "libamgralloc_ext",
+	defaults: [
+    "gralloc_go_defaults",
+    ],		
     vendor_available: true,
     system_ext_specific: true,
     shared_libs: [
@@ -58,7 +61,6 @@ cc_library_shared {
         "libhardware",
         "android.hardware.graphics.common@1.0",
         "android.hardware.graphics.mapper@4.0",
-        "arm.graphics-V1-ndk_platform",
         "libgralloctypes",
         "libhidlbase",
     ],
@@ -75,6 +77,9 @@ cc_library_shared {
 
 cc_library_static {
     name: "libamgralloc_ext_static",
+	defaults: [
+	"gralloc_go_defaults",
+	],
     proprietary: true,
     shared_libs: [
         "liblog",
@@ -83,7 +88,6 @@ cc_library_static {
         "libhardware",
         "android.hardware.graphics.common@1.0",
         "android.hardware.graphics.mapper@4.0",
-        "arm.graphics-V1-ndk_platform",
         "libgralloctypes",
         "libhidlbase",
     ],
