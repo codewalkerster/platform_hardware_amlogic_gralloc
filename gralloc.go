@@ -4,6 +4,7 @@ import (
     "android/soong/android"
     "android/soong/cc"
     "fmt"
+    "strconv"
 )
 
 func init() {
@@ -23,9 +24,16 @@ func hw_gralloc_aml_Defaults(ctx android.LoadHookContext) {
     p := &propsE{}
     PlatformVndkVersion := ctx.DeviceConfig().PlatformVndkVersion()
     fmt.Println("PlatformVndkVersion:", PlatformVndkVersion)
-    //For Andriod T, before freeze API PlatformVndkVersion return string like "Tiramisu", 
-    //after freeze API it will be changed to be numbers like normal android release "32"
-    if len(PlatformVndkVersion) > 2 {
+    IntPlatformVndkVersion,err := strconv.Atoi(PlatformVndkVersion)
+    if err != nil {
+        fmt.Printf("%v fail to convert", IntPlatformVndkVersion)
+        return
+    }
+    //For Andriod T, before freeze API PlatformVndkVersion return string like "Tiramisu",
+    //after freeze API it has been changed to number "33"
+    // if len(PlatformVndkVersion) > 2 {
+    fmt.Printf("%v success to convert", IntPlatformVndkVersion)
+    if IntPlatformVndkVersion > 32 {
          p.Shared_libs = append(p.Shared_libs, "arm.graphics-V1-ndk")
      } else {
          p.Shared_libs = append(p.Shared_libs, "arm.graphics-V1-ndk_platform")
