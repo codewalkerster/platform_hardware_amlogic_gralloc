@@ -44,6 +44,10 @@ ifeq ($(TARGET_BUILD_KERNEL_4_9), true)
 BUILD_KERNEL_4_9 ?= true
 endif
 
+ifeq ($(TARGET_BUILD_KERNEL_VERSION), 4.9)
+BUILD_KERNEL_4_9 ?= true
+endif
+
 GRALLOC_USE_NEW_ION := $(shell expr $(PLATFORM_SDK_VERSION) \>= 30)
 
 ifeq ($(TARGET_APP_LAYER_USE_CONTINUOUS_BUFFER),true)
