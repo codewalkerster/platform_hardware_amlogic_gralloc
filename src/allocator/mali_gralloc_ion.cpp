@@ -302,6 +302,10 @@ int ion_device::alloc_from_ion_heap(uint64_t usage, size_t size, enum ion_heap_t
 	if (heap_type == ION_HEAP_TYPE_SECURE)
 		flags |= ION_FLAG_EXTEND_MESON_HEAP_SECURE;
 
+#ifdef AML_GRALLOC_DEBUG
+	AML_GRALLOC_LOGI("%s: flags = %u", __func__, flags);
+#endif
+
 	bool system_heap_exist = false;
 
 	if (use_legacy_ion == false)
@@ -357,6 +361,7 @@ int ion_device::alloc_from_ion_heap(uint64_t usage, size_t size, enum ion_heap_t
 		/* Don't allow falling back to sytem heap if secure was requested. */
 		if (heap_type == ION_HEAP_TYPE_SECURE)
 		{
+			MALI_GRALLOC_LOGE("ION_HEAP_TYPE_SECURE Allocation failed on on dma heap.");
 			return -1;
 		}
 		/* hw fb canot fallback to system heap.*/
@@ -1532,7 +1537,8 @@ void am_gralloc_set_ion_flags(ion_heap_type heap_type, uint64_t usage,
 	if (ion_flags)
 	{
 		if ((heap_type != ION_HEAP_TYPE_DMA) &&
-			(heap_type != ION_HEAP_TYPE_CUSTOM))
+			(heap_type != ION_HEAP_TYPE_CUSTOM) &&
+			(heap_type != ION_HEAP_TYPE_SECURE))
 		{
 			if ((usage & (GRALLOC_USAGE_SW_WRITE_MASK | GRALLOC_USAGE_SW_READ_MASK))
 				|| (usage == GRALLOC_USAGE_HW_TEXTURE))
