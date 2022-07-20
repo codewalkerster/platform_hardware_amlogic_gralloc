@@ -102,6 +102,7 @@ typedef enum {
     AM_VIDEO_AFBC        = 0x20,
     AM_VIDEO_DI_POST     = 0x40,
     AM_VIDEO_4K          = 0x80,
+    AM_VIDEO_8K          = 0x100,
 } AM_VIDEO_TYPE;
 
 native_handle_t * am_gralloc_create_sideband_handle(int type, int channel);
