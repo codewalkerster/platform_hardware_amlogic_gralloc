@@ -203,3 +203,11 @@ SOONG_CONFIG_arm_gralloc_gralloc_camera_write_raw16 := $(GRALLOC_CAMERA_WRITE_RA
 SOONG_CONFIG_arm_gralloc_mali_gralloc_api_tests := $(MALI_GRALLOC_API_TESTS)
 SOONG_CONFIG_arm_gralloc_gralloc_api_version := $(GRALLOC_API_VERSION)
 SOONG_CONFIG_arm_gralloc_meson_gpu_arch := $(MESON_GPU_ARCH)
+
+# Retrieve the directory of Gralloc module
+LOCAL_MODULE_MAKEFILE := $(lastword $(MAKEFILE_LIST)))
+GRALLOC_TOP_DIR := $(strip $(patsubst %/,%,$(dir $(LOCAL_MODULE_MAKEFILE))))
+
+# Add the system properties for Gralloc
+TARGET_VENDOR_PROP += $(GRALLOC_TOP_DIR)/arm.gralloc.usage.prop
+TARGET_VENDOR_PROP += $(GRALLOC_TOP_DIR)/arm.egl.config.prop
