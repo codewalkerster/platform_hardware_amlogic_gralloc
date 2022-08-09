@@ -26,6 +26,7 @@ package {
 
 aidl_interface {
     name: "arm.graphics",
+    owner: "arm",
     host_supported: true,
     vendor_available: true,
     system_ext_specific: true,

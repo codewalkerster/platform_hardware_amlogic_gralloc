@@ -25,19 +25,17 @@ func hw_gralloc_aml_Defaults(ctx android.LoadHookContext) {
     PlatformVndkVersion := ctx.DeviceConfig().PlatformVndkVersion()
     fmt.Println("PlatformVndkVersion:", PlatformVndkVersion)
     IntPlatformVndkVersion,err := strconv.Atoi(PlatformVndkVersion)
+    // For An Android letter, before freeze API PlatformVndkVersion return code name, like
+    // "Tiramisu", after freeze API it has been changed to number.
     if err != nil {
         fmt.Printf("%v fail to convert", IntPlatformVndkVersion)
-        return
+        p.Shared_libs = append(p.Shared_libs, "arm.graphics-V1-ndk")
+    } else {
+        if IntPlatformVndkVersion > 32 {
+            p.Shared_libs = append(p.Shared_libs, "arm.graphics-V1-ndk")
+        } else {
+            p.Shared_libs = append(p.Shared_libs, "arm.graphics-V1-ndk_platform")
+        }
     }
-    //For Andriod T, before freeze API PlatformVndkVersion return string like "Tiramisu",
-    //after freeze API it has been changed to number "33"
-    // if len(PlatformVndkVersion) > 2 {
-    fmt.Printf("%v success to convert", IntPlatformVndkVersion)
-    if IntPlatformVndkVersion > 32 {
-         p.Shared_libs = append(p.Shared_libs, "arm.graphics-V1-ndk")
-     } else {
-         p.Shared_libs = append(p.Shared_libs, "arm.graphics-V1-ndk_platform")
-     }
-
     ctx.AppendProperties(p)
 }
