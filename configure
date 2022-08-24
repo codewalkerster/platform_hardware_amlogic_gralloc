@@ -33,7 +33,7 @@
 # When not in a "lunched" shell, the Android version can be set to 'n' by specifying:
 # ANDROID_n=y
 # The Android version affects whether the private buffer interface build is enabled or not.
-# It will be enabled on Android version 10 unless overriden with the PRIVATE_BUFFER_INTERFACE option.
+# It will be enabled on Android version 10 unless overridden with the PRIVATE_BUFFER_INTERFACE option.
 #
 # The Android version also affects the Gralloc version which is then used to decide
 # whether the Blueprint build files are enabled.

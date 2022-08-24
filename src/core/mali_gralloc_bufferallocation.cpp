@@ -261,7 +261,7 @@ void init_afbc(uint8_t *buf, const uint64_t alloc_format,
 	 * When using separated planes for YUV formats, the header layout is the non-subsampled one
 	 * as there is a header per-plane and there is no sub-sampling within the plane.
 	 * Separated plane only supports 32x8 or 64x4 for the luma plane, so the first plane must be 4 or 7.
-	 * Seperated plane only supports 64x4 for subsequent planes, so these must be header layout 7.
+	 * Separated plane only supports 64x4 for subsequent planes, so these must be header layout 7.
 	 */
 	const uint32_t layout = is_subsampled_yuv(base_format) && !is_multi_plane ? 1 : 0;
 

@@ -100,7 +100,7 @@ cc_library_static {
     srcs: ["am_gralloc_ext.cpp"],
 }
 
-// Interal static lib for amlogic extend gralloc
+// Internal static lib for amlogic extend gralloc
 cc_library_static {
     name: "libamgralloc_internal_static",
     proprietary: true,

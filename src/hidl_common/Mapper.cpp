@@ -301,8 +301,8 @@ void importBuffer(const hidl_handle& rawHandle, IMapper::importBuffer_cb hidl_cb
 	if (gRegisteredHandles->add(bufferHandle) == false)
 	{
 		/* The newly cloned handle is already registered. This can only happen
-		 * when a handle previously registered was native_handle_delete'd instead
-		 * of freeBuffer'd.
+		 * when a handle previously registered was native_handle_delete instead
+		 * of freeBuffer.
 		 */
 		MALI_GRALLOC_LOGE("Handle %p has already been imported; potential fd leaking",
 		       bufferHandle);
@@ -598,7 +598,7 @@ Error validateBufferSize(void* buffer,
 
 #ifdef GRALLOC_AML_EXTEND
     /*gralloc_buffer->stride is not used in r21p0 gralloc, but
-     *it still be resturned to client.
+     *it still be returned to client.
      *Amlogic hwc use ext api to get the real stride and do import
      *with the real strid passed, we will failed.
      *So now we just donot check it for the stride is useless now.

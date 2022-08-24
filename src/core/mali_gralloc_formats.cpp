@@ -211,7 +211,7 @@ static uint16_t get_producers(uint64_t usage)
 
 /*
  * Determines the intersection of all IP consumers capability sets. Since all
- * capabiltiies are positive, the intersection can be expressed via a logical
+ * capabilities are positive, the intersection can be expressed via a logical
  * AND operation. Capabilities must be defined (OPTIONS_PRESENT) to indicate
  * that an IP is part of the media system (otherwise it will be ignored).
  * See definition of MALI_GRALLOC_FORMAT_CAPABILITY_* for more information.
@@ -259,7 +259,7 @@ static uint64_t get_consumer_caps(const uint16_t consumers)
 
 /*
  * Determines the intersection of all IP producers capability sets. Since all
- * capabiltiies are positive, the intersection can be expressed via a logical
+ * capabilities are positive, the intersection can be expressed via a logical
  * AND operation. Capabilities must be defined (OPTIONS_PRESENT) to indicate
  * that an IP is part of the media system (otherwise it will be ignored).
  * See definition of MALI_GRALLOC_FORMAT_CAPABILITY_* for more information.
@@ -548,7 +548,7 @@ bool is_subsampled_yuv(const uint32_t base_format)
 
 
 /*
- * Determines whether multi-plane AFBC (requires specific IP capabiltiies) is
+ * Determines whether multi-plane AFBC (requires specific IP capabilities) is
  * supported across all producers and consumers.
  *
  * @param producers      [in]    Producers (flags).
@@ -1413,7 +1413,7 @@ static uint32_t get_base_format_for_modifiers(const int32_t fmt_idx,
 		{
 			/*
 			 * For legacy clients *only*, allow fall-back to 'compatible' base format.
-			 * Multi-plane AFBC format requeset would not be intentional and therefore
+			 * Multi-plane AFBC format request would not be intentional and therefore
 			 * fallback to single-plane should happen automatically internally.
 			 */
 			for (uint16_t i = 0; i < num_formats; i++)
@@ -1668,7 +1668,7 @@ uint64_t mali_gralloc_select_format(const uint64_t req_format,
 out:
 	/*
 	 * Reconstruct internal format (legacy).
-	 * In order to retain backwards-compatiblity, private_handle_t member,
+	 * In order to retain backwards-compatibility, private_handle_t member,
 	 * 'internal_format' will *not* be updated with single-plane format. Clients with
 	 * support for multi-plane AFBC should use a combination of 'internal_format' and
 	 * 'is_multi_plane()'' to determine whether the allocated format is multi-plane.

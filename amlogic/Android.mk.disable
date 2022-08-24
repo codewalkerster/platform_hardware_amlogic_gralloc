@@ -66,7 +66,7 @@ LOCAL_MODULE := libamgralloc_ext_static
 include $(BUILD_STATIC_LIBRARY)
 
 
-# Interal static lib for amlogic extend gralloc
+# Internal static lib for amlogic extend gralloc
 include $(CLEAR_VARS)
 LOCAL_PROPRIETARY_MODULE := true
 LOCAL_SHARED_LIBRARIES := liblog libcutils

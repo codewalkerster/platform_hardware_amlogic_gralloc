@@ -52,7 +52,7 @@ interface IAttributeAccessor {
      * this case the producer must set a dataspace for the buffer.
      *
      * @return error is NONE, ATTRIBUTE_ACCESS_FAILED or ATTRIBUTE_NOT_SET.
-     * @return dataspace is the dataspace of the bufer's data.
+     * @return dataspace is the dataspace of the buffer's data.
      */
     getDataspace()
         generates(Error error, Dataspace dataspace);

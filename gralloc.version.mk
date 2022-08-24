@@ -19,7 +19,7 @@ PLATFORM_SDK_GREATER_THAN_28 := $(shell expr $(PLATFORM_SDK_VERSION) \> 28)
 
 GRALLOC_EXPERIMENTAL ?=1
 
-# Set default Gralloc version for the platform, but allow this to be overriden.
+# Set default Gralloc version for the platform, but allow this to be overridden.
 ifeq ($(PLATFORM_SDK_GREATER_THAN_28), 1)
     GRALLOC_API_VERSION?=3.x
 else

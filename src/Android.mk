@@ -17,7 +17,7 @@
 
 LOCAL_PATH := $(call my-dir)
 
-# HAL module implemenation, not prelinked.
+# HAL module implementation, not prelinked.
 # Binary located in hw/gralloc.<ro.product.board>.so
 include $(CLEAR_VARS)
 ifndef PLATFORM_SDK_VERSION

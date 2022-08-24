@@ -358,7 +358,7 @@ int ion_device::alloc_from_ion_heap(uint64_t usage, size_t size, enum ion_heap_t
 	 */
 	if (ret < 0)
 	{
-		/* Don't allow falling back to sytem heap if secure was requested. */
+		/* Don't allow falling back to system heap if secure was requested. */
 		if (heap_type == ION_HEAP_TYPE_SECURE)
 		{
 			MALI_GRALLOC_LOGE("ION_HEAP_TYPE_SECURE Allocation failed on on dma heap.");

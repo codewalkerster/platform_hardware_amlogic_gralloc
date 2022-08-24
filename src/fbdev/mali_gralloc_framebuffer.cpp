@@ -368,7 +368,7 @@ static int fb_alloc_framebuffer_locked(mali_gralloc_module *m, uint64_t consumer
 	if (numBuffers == 1)
 	{
 		// If we have only one buffer, we never use page-flipping. Instead,
-		// we return a regular buffer which will be memcpy'ed to the main
+		// we return a regular buffer which will be memcpy to the main
 		// screen when post is called.
 		uint64_t newConsumerUsage = (consumer_usage & ~(static_cast<uint64_t>(GRALLOC_USAGE_HW_FB)));
 		uint64_t newProducerUsage = (producer_usage & ~(static_cast<uint64_t>(GRALLOC_USAGE_HW_FB))) |
@@ -408,7 +408,7 @@ static int fb_alloc_framebuffer_locked(mali_gralloc_module *m, uint64_t consumer
 
 	/*
 	 * Perform allocator specific actions. If these fail we fall back to a regular buffer
-	 * which will be memcpy'ed to the main screen when fb_post is called.
+	 * which will be memcpy to the main screen when fb_post is called.
 	 */
 	if (fb_alloc_framebuffer_dmabuf(m, hnd) == -1)
 	{

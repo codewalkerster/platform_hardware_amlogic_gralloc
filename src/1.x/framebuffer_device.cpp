@@ -229,7 +229,7 @@ int framebuffer_device_open(hw_module_t const *module, const char *name, hw_devi
 	 * This leaves two options
 	 * Option 1: initialize the const members at the instantiation time. With {value1, value2 ..}
 	 * Which relies on the order of the members, and if members are reordered or a new member is introduced
-	 * it will end up assiging wrong value to members. Designated assignment as well has been removed in C++11
+	 * it will end up assigning wrong value to members. Designated assignment as well has been removed in C++11
 	 * Option 2: use malloc instead of 'new' to allocate the class/struct and initialize the members in code.
 	 * This is the only maintainable option available.
 	 */

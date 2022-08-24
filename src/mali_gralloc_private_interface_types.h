@@ -43,7 +43,7 @@ typedef enum
 	MALI_HDR_LAST
 } mali_transfer_function;
 
-/* This structure needs to have the same layout on all architecures and compilers. */
+/* This structure needs to have the same layout on all architectures and compilers. */
 typedef struct
 {
 	//values are in units of 0.00002
@@ -53,7 +53,7 @@ typedef struct
 
 static_assert(sizeof(primaries) == 4, "Unexpected size");
 
-/* This structure needs to have the same layout on all architecures and compilers. */
+/* This structure needs to have the same layout on all architectures and compilers. */
 typedef struct
 {
 	primaries r;

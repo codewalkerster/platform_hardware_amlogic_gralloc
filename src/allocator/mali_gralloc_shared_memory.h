@@ -23,7 +23,7 @@
 #include <utility>
 
 /*
- * Returns [file descriptor of open file, address of mmap'd file]
+ * Returns [file descriptor of open file, address of mmap file]
  * on success or [-1, MAP_FAILED] on failure with errno set.
  *
  * When successful, the file descriptor will need to be freed with
