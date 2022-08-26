@@ -82,7 +82,7 @@ endif
 LOCAL_MULTILIB := both
 include $(BUILD_STATIC_LIBRARY)
 
-# Host build only on Android 10 and later due to misisng libutils on P.
+# Host build only on Android 10 and later due to missing libutils on P.
 ifeq ($(PLATFORM_SDK_GREATER_THAN_28), 1)
 include $(CLEAR_VARS)
 LOCAL_MODULE := $(MULTIARCH_MODULE)

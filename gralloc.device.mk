@@ -138,7 +138,7 @@ MALI_VALID_VIDEO_VERSIONS:= 0 500 550 61
 ifeq ($(GRALLOC_AML_EXTEND),1)
 BOARD_VALID_RESOLUTION_RATIO:= 720 1080
 ifeq ($(filter $(BOARD_RESOLUTION_RATIO),$(BOARD_VALID_RESOLUTION_RATIO)),)
-    $(error resulution version $(BOARD_RESOLUTION_RATIO) is not valid. Valid versions are $(BOARD_VALID_RESOLUTION_RATIO))
+    $(error resolution version $(BOARD_RESOLUTION_RATIO) is not valid. Valid versions are $(BOARD_VALID_RESOLUTION_RATIO))
 endif
 endif
 

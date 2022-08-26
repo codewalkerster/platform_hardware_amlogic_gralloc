@@ -799,7 +799,7 @@ static uint64_t validate_afbc_format(uint64_t alloc_format,
  * @param consumer_caps  [in]    Buffer consumer capabilities (intersection).
  *
  * @return valid AFBC format, where modifiers are enabled (supported/preferred);
- *         base format without modifers, otherwise
+ *         base format without modifiers, otherwise
  */
 static uint64_t get_afbc_format(const uint32_t base_format,
                                 const uint64_t usage,

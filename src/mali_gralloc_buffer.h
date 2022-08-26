@@ -142,7 +142,7 @@ struct private_handle_t
         //meson graphics changes start
 #ifdef GRALLOC_AML_EXTEND
 		/*
-			!!Dont use these flags directly.
+			!!Don't use these flags directly.
 		*/
 		PRIV_FLAGS_VIDEO_OVERLAY = 0x00000010,
 		PRIV_FLAGS_VIDEO_OMX     = 0x00000020,

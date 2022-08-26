@@ -96,7 +96,7 @@ typedef enum
 	 * internal format itself but one of the ones below.
 	 */
 
-	/* The internal private formats that have no HAL equivivalent are defined
+	/* The internal private formats that have no HAL equivalent are defined
 	 * afterwards starting at a specific base range.
 	 */
 	MALI_GRALLOC_FORMAT_INTERNAL_NV12 = MALI_GRALLOC_FORMAT_INTERNAL_RANGE_BASE,
