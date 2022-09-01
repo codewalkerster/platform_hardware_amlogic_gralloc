@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 Arm Limited.
+ * Copyright (C) 2020-2021 Arm Limited.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -19,20 +19,16 @@ cc_defaults {
 	name: "arm_gralloc_core_defaults",
 	defaults: [
 		"arm_gralloc_defaults",
-	],
-	cflags: [
-		/* Minimum buffer dimensions in pixels when buffer will use AFBC */
-		"-DGRALLOC_DISP_W=0",
-		"-DGRALLOC_DISP_H=0",
+		"arm_gralloc_version_defaults",
 	],
 
 	srcs: [
-		"mali_gralloc_bufferaccess.cpp",
-		"mali_gralloc_bufferallocation.cpp",
-		"mali_gralloc_formats.cpp",
-		"mali_gralloc_reference.cpp",
-		"mali_gralloc_debug.cpp",
+		"buffer_access.cpp",
+		"buffer_allocation.cpp",
+		"formats.cpp",
+		"reference.cpp",
 		"format_info.cpp",
+		"drm_utils.cpp",
 	],
 	static_libs: [
 		"libarect",
@@ -41,6 +37,7 @@ cc_defaults {
 		"liblog",
 		"libcutils",
 		"libutils",
+		"libdrm",
 	],
 	target: {
 		android: {

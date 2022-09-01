@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 Arm Limited.
+ * Copyright (C) 2020-2022 Arm Limited.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,26 +15,12 @@
  * limitations under the License.
  */
 
-package {
-    // See: http://go/android-license-faq
-    // A large-scale-change added 'default_applicable_licenses' to import
-    // all of the 'license_kinds' from "hardware_amlogic_license"
-    // to get the below license kinds:
-    //   SPDX-license-identifier-Apache-2.0
-    default_applicable_licenses: ["hardware_amlogic_license"],
-}
-
 cc_defaults {
 	name: "arm_gralloc_version_defaults",
-	target: {
-		android: {
-			shared_libs: [
-				"android.hardware.graphics.common@1.2",
-			],
-		},
-	},
+	shared_libs: [
+		"android.hardware.graphics.common@1.2",
+	],
 	cflags: [
-		"-DLOG_TAG=\"gralloc4\"",
 		"-DGRALLOC_VERSION_MAJOR=4",
 		"-DHIDL_ALLOCATOR_VERSION_SCALED=400",
 		"-DHIDL_MAPPER_VERSION_SCALED=400",
@@ -47,6 +33,8 @@ cc_defaults {
 	defaults: [
 		"arm_gralloc_defaults",
 		"arm_gralloc_version_defaults",
+		"arm_gralloc_uses_aidl_defaults",
+		"libgralloc_allocator_dependencies",
 	],
 	compile_multilib: "both",
 	relative_install_path: "hw/",
@@ -63,11 +51,14 @@ cc_defaults {
 		"libdrm",
 	],
 	static_libs: [
-		"libamgralloc_internal_static",
 		"libarect",
 		"libgralloc_core",
 		"libgralloc_allocator",
+		"libgralloc_allocator_shared_memory",
 		"libgralloc_capabilities",
+		"libgralloc_xml_configuration",
+		"libxml2",
+		"libamgralloc_internal_static",
 	],
 	header_libs: [
 		"libnativebase_headers",
@@ -87,7 +78,7 @@ cc_library_shared {
 		"android.hardware.graphics.mapper@4.0",
 	],
 	srcs: [
-		"GrallocAllocator.cpp",
+		"allocator.cpp",
 		":libgralloc_hidl_common_allocator",
 		":libgralloc_hidl_common_shared_metadata",
 	],
@@ -100,10 +91,9 @@ cc_library_shared {
 	name: "android.hardware.graphics.mapper@4.0-impl-arm",
 	defaults: [
 		"arm_gralloc_api_4x_defaults",
-		"gralloc_go_defaults",
+		"arm_gralloc_uses_aidl_defaults",
 	],
 	static_libs: [
-		"libgralloc_drmutils",
 		"libamgralloc_internal_static",
 	],
 	shared_libs: [
@@ -111,7 +101,7 @@ cc_library_shared {
 		"android.hardware.graphics.mapper@4.0",
 	],
 	srcs: [
-		"GrallocMapper.cpp",
+		"mapper.cpp",
 		":libgralloc_hidl_common_mapper",
 		":libgralloc_hidl_common_mapper_metadata",
 		":libgralloc_hidl_common_shared_metadata",

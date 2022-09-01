@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2020 ARM Limited. All rights reserved.
+ * Copyright (C) 2018-2022 ARM Limited. All rights reserved.
  *
  * Copyright (C) 2008 The Android Open Source Project
  *
@@ -15,32 +15,31 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#pragma once
 
-#ifndef FORMAT_INFO_H_
-#define FORMAT_INFO_H_
+#include "buffer.h"
 
-#include "mali_gralloc_buffer.h"
+#include <vector>
 
 typedef uint8_t format_support_flags;
 
 /* Base format unsupported */
 #define F_NONE 0
 /* Base format supports uncompressed */
-#define F_LIN ((uint8_t)1 << 0)
+#define F_LIN (static_cast<format_support_flags>(1) << 0)
 /* Base format supports AFBC */
-#define F_AFBC ((uint8_t)1 << 1)
-/* Base format supports AFBC with different swizzle */
-#define F_AFBC_SWIZ ((uint8_t)1 << 2)
+#define F_AFBC (static_cast<format_support_flags>(1) << 1)
 
+/* Base format supports AFRC */
+#define F_AFRC (static_cast<format_support_flags>(1) << 2)
 
-#define F_BL_YUV ((uint8_t)1 << 4)
+#define F_BL_YUV (static_cast<format_support_flags>(1) << 3)
 
 typedef struct
 {
 	uint16_t width;
 	uint16_t height;
 } rect_t;
-
 
 /*
  * Pixel format information.
@@ -52,10 +51,10 @@ typedef struct
 {
 	uint32_t id;                    /* Format ID. */
 	uint8_t npln;                   /* Number of planes. */
-	uint8_t ncmp[MAX_PLANES];       /* Number of components in each plane. */
+	uint8_t ncmp[max_planes];       /* Number of components in each plane. */
 	uint8_t bps;                    /* Bits per sample (primary/largest). */
-	uint8_t bpp_afbc[MAX_PLANES];   /* Bits per pixel (AFBC), without implicit padding. 'X' in RGBX is still included. */
-	uint8_t bpp[MAX_PLANES];        /* Bits per pixel (linear/uncompressed), including any implicit sample padding defined by format (e.g. 10-bit Y210 padded to 16-bits).
+	uint8_t bpp_afbc[max_planes];   /* Bits per pixel (AFBC), without implicit padding. 'X' in RGBX is still included. */
+	uint8_t bpp[max_planes];        /* Bits per pixel (linear/uncompressed), including any implicit sample padding defined by format (e.g. 10-bit Y210 padded to 16-bits).
 	                                 * NOTE: bpp[n] and/or (bpp[n] * align_w_cpu) must be multiples of 8. */
 	uint8_t hsub;                   /* Horizontal sub-sampling (YUV formats). Pixel rounding in width (all formats). Must be a power of 2. */
 	uint8_t vsub;                   /* Vertical sub-sampling (YUV formats). Pixel rounding in height (all formats). Must be a power of 2. */
@@ -70,6 +69,9 @@ typedef struct
 	bool linear;                    /* Linear/uncompressed supported. */
 	bool yuv_transform;             /* Supports AFBC YUV transform: 3+ channel RGB (strict R-G-B-? order) with less than 12-bit per sample. */
 	bool flex;                      /* Linear version of format can be represented as flex. */
+	bool block_linear;              /* Format supports 16x16 Block Linear layout */
+	bool afrc;                      /* AFRC supported (per specification and by gralloc). IP support not considered. */
+
 	/* Computes the total number of components in the format. */
 	int total_components() const
 	{
@@ -81,6 +83,15 @@ typedef struct
 		return sum;
 	}
 } format_info_t;
+
+/* Returns true if the formats are the same or if they only differ with respect to the order of components.
+	False otherwise. */
+static inline bool is_same_or_components_reordered(const format_info_t &x, const format_info_t &y)
+{
+	return x.npln == y.npln && x.total_components() == y.total_components() && x.bps == y.bps && x.is_yuv == y.is_yuv &&
+	       x.hsub == y.hsub && x.vsub == y.vsub;
+}
+
 
 typedef struct
 {
@@ -98,21 +109,17 @@ typedef struct
 
 } format_ip_support_t;
 
+/**
+ * @brief Get the list of all base formats known to Gralloc.
+ */
+const std::vector<format_info_t> &get_all_base_formats();
 
-extern const format_info_t formats[];
-extern const format_ip_support_t formats_ip_support[];
-extern const size_t num_formats;
-extern const size_t num_ip_formats;
-
-extern int32_t get_format_index(const uint32_t base_format);
-extern int32_t get_ip_format_index(const uint32_t base_format);
-extern uint32_t get_internal_format(const uint32_t base_format, const bool map_to_internal);
-void get_format_dataspace(uint32_t base_format,
+const format_info_t *get_format_info(uint32_t base_format);
+extern const format_ip_support_t *get_format_ip_support(uint32_t base_format);
+extern uint32_t get_internal_format(uint32_t base_format);
+void get_format_dataspace(const format_info_t *info,
                           uint64_t usage,
                           int width,
                           int height,
                           android_dataspace_t *dataspace,
                           mali_gralloc_yuv_info *yuv_info);
-extern bool sanitize_formats(void);
-
-#endif

@@ -10,7 +10,7 @@
 #ifndef AM_GRALLOC_EXT_INTERNAL_H
 #define AM_GRALLOC_EXT_INTERNAL_H
 
-#include <gralloc_priv.h>
+#include "am_gralloc_ref.h"
 #include <utils/NativeHandle.h>
 
 #define OMX_VIDEOLAYER_ALLOC_BUFFER_WIDTH     192

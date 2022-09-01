@@ -9,13 +9,13 @@
 
 #include "am_gralloc_ext.h"
 #include <hardware/gralloc1.h>
-#include <gralloc_priv.h>
-#include "gralloc_buffer_priv.h"
-#include "mali_gralloc_usages.h"
-
 #include <android/hardware/graphics/mapper/4.0/IMapper.h>
 #include <gralloctypes/Gralloc4.h>
-#include <aidl/arm/graphics/ArmMetadataType.h>
+#include <aidl/arm/graphics/AmlMetadataType.h>
+#include <aidl/arm/graphics/AmlMetadataType.h>
+#include <buffer.h>
+#include <gralloc/formats.h>
+
 
 /*
 Api default have upgrade to support gralloc 3.x.
@@ -31,24 +31,24 @@ using android::gralloc4::encodeInt32;
 using android::gralloc4::decodeInt32;
 
 
-#define GRALLOC_ARM_METADATA_TYPE_NAME "arm.graphics.ArmMetadataType"
-const static IMapper::MetadataType ArmMetadataType_AM_OMX_TUNNEL{
-    GRALLOC_ARM_METADATA_TYPE_NAME,
-    static_cast<int64_t>(aidl::arm::graphics::ArmMetadataType::AM_OMX_TUNNEL)
+#define GRALLOC_AML_METADATA_TYPE_NAME "arm.graphics.AmlMetadataType"
+const static IMapper::MetadataType AmlMetadataType_AM_OMX_TUNNEL{
+    GRALLOC_AML_METADATA_TYPE_NAME,
+    static_cast<int64_t>(aidl::arm::graphics::AmlMetadataType::AM_OMX_TUNNEL)
 };
 
-const static IMapper::MetadataType ArmMetadataType_AM_OMX_FLAG{
-    GRALLOC_ARM_METADATA_TYPE_NAME,
-    static_cast<int64_t>(aidl::arm::graphics::ArmMetadataType::AM_OMX_FLAG)
+const static IMapper::MetadataType AmlMetadataType_AM_OMX_FLAG{
+    GRALLOC_AML_METADATA_TYPE_NAME,
+    static_cast<int64_t>(aidl::arm::graphics::AmlMetadataType::AM_OMX_FLAG)
 };
 
-const static IMapper::MetadataType ArmMetadataType_AM_OMX_VIDEO_TYPE{
-    GRALLOC_ARM_METADATA_TYPE_NAME,
-    static_cast<int64_t>(aidl::arm::graphics::ArmMetadataType::AM_OMX_VIDEO_TYPE)
+const static IMapper::MetadataType AmlMetadataType_AM_OMX_VIDEO_TYPE{
+    GRALLOC_AML_METADATA_TYPE_NAME,
+    static_cast<int64_t>(aidl::arm::graphics::AmlMetadataType::AM_OMX_VIDEO_TYPE)
 };
 
-const static IMapper::MetadataType ArmMetadataType_AM_OMX_BUFFER_SEQUENCE{ GRALLOC_ARM_METADATA_TYPE_NAME,
-    static_cast<int64_t>(aidl::arm::graphics::ArmMetadataType::AM_OMX_BUFFER_SEQUENCE) };
+const static IMapper::MetadataType AmlMetadataType_AM_OMX_BUFFER_SEQUENCE{ GRALLOC_AML_METADATA_TYPE_NAME,
+    static_cast<int64_t>(aidl::arm::graphics::AmlMetadataType::AM_OMX_BUFFER_SEQUENCE) };
 
 static IMapper &get_service()
 {
@@ -97,7 +97,7 @@ static int am_set_metadata(IMapper &mapper, const native_handle_t * handle, IMap
 
 bool am_gralloc_is_valid_graphic_buffer(
     const native_handle_t * hnd) {
-    private_handle_t const* buffer = hnd ? private_handle_t::dynamicCast(hnd) : NULL;
+    private_handle_t const* buffer = hnd ? private_handle_t::downcast(hnd) : NULL;
     if (buffer)
         return true;
     return false;
@@ -187,24 +187,28 @@ bool am_gralloc_is_omx_osd_producer(uint64_t usage) {
 }
 
 int am_gralloc_get_format(const native_handle_t * hnd) {
-    private_handle_t const* buffer = hnd ? private_handle_t::dynamicCast(hnd) : NULL;
-    if (buffer)
+    private_handle_t const* buffer = hnd ? private_handle_t::downcast(hnd) : NULL;
+    if (buffer) {
+        ALOGV("[%s] format:%d", __FUNCTION__, buffer->format);
         return buffer->format;
+    }
 
     return -ENOMEM;
 }
 
 int am_gralloc_get_buffer_fd(const native_handle_t * hnd) {
-    private_handle_t const* buffer = hnd ? private_handle_t::dynamicCast(hnd) : NULL;
-    if (buffer)
+    private_handle_t const* buffer = hnd ? private_handle_t::downcast(hnd) : NULL;
+    if (buffer) {
+        ALOGD("[%s] share_fd:%d", __FUNCTION__, buffer->share_fd);
         return buffer->share_fd;
+    }
 
     return -1;
 }
 
 #ifdef GRALLOC_USE_GRALLOC1_API
 int am_gralloc_get_stride_in_byte(const native_handle_t * hnd) {
-    private_handle_t const* buffer = hnd ? private_handle_t::dynamicCast(hnd) : NULL;
+    private_handle_t const* buffer = hnd ? private_handle_t::downcast(hnd) : NULL;
     if (buffer)
         return buffer->byte_stride;
 
@@ -212,7 +216,7 @@ int am_gralloc_get_stride_in_byte(const native_handle_t * hnd) {
 }
 #else
 int am_gralloc_get_stride_in_byte(const native_handle_t * hnd) {
-    private_handle_t const* buffer = hnd ? private_handle_t::dynamicCast(hnd) : NULL;
+    private_handle_t const* buffer = hnd ? private_handle_t::downcast(hnd) : NULL;
     if (buffer)
         return buffer->plane_info[0].byte_stride;
 
@@ -221,7 +225,7 @@ int am_gralloc_get_stride_in_byte(const native_handle_t * hnd) {
 #endif
 
 int am_gralloc_get_stride_in_pixel(const native_handle_t * hnd) {
-    private_handle_t const* buffer = hnd ? private_handle_t::dynamicCast(hnd) : NULL;
+    private_handle_t const* buffer = hnd ? private_handle_t::downcast(hnd) : NULL;
     if (buffer)
         return buffer->stride;
 
@@ -229,7 +233,7 @@ int am_gralloc_get_stride_in_pixel(const native_handle_t * hnd) {
 }
 
 int am_gralloc_get_aligned_height(const native_handle_t * hnd) {
-    private_handle_t const* buffer = hnd ? private_handle_t::dynamicCast(hnd) : NULL;
+    private_handle_t const* buffer = hnd ? private_handle_t::downcast(hnd) : NULL;
     if (buffer)
         return buffer->plane_info[0].alloc_height;
 
@@ -237,23 +241,23 @@ int am_gralloc_get_aligned_height(const native_handle_t * hnd) {
 }
 
 int am_gralloc_get_width(const native_handle_t * hnd) {
-    private_handle_t const* buffer = hnd ? private_handle_t::dynamicCast(hnd) : NULL;
+    private_handle_t const* buffer = hnd ? private_handle_t::downcast(hnd) : NULL;
     if (buffer)
-        return buffer->req_width;
+        return buffer->width;
 
     return 0;
 }
 
 int am_gralloc_get_height(const native_handle_t * hnd) {
-    private_handle_t const* buffer = hnd ? private_handle_t::dynamicCast(hnd) : NULL;
+    private_handle_t const* buffer = hnd ? private_handle_t::downcast(hnd) : NULL;
     if (buffer)
-        return buffer->req_height;
+        return buffer->height;
 
     return 0;
 }
 
 int am_gralloc_get_size(const native_handle_t * hnd) {
-    private_handle_t const* buffer = hnd ? private_handle_t::dynamicCast(hnd) : NULL;
+    private_handle_t const* buffer = hnd ? private_handle_t::downcast(hnd) : NULL;
     if (buffer)
         return buffer->size;
 
@@ -262,7 +266,7 @@ int am_gralloc_get_size(const native_handle_t * hnd) {
 
 uint64_t am_gralloc_get_producer_usage(
     const native_handle_t * hnd) {
-    private_handle_t const* buffer = hnd ? private_handle_t::dynamicCast(hnd) : NULL;
+    private_handle_t const* buffer = hnd ? private_handle_t::downcast(hnd) : NULL;
     if (buffer)
         return buffer->producer_usage;
 
@@ -271,7 +275,7 @@ uint64_t am_gralloc_get_producer_usage(
 
 uint64_t am_gralloc_get_consumer_usage(
     const native_handle_t * hnd) {
-    private_handle_t const* buffer = hnd ? private_handle_t::dynamicCast(hnd) : NULL;
+    private_handle_t const* buffer = hnd ? private_handle_t::downcast(hnd) : NULL;
     if (buffer)
         return buffer->consumer_usage;
 
@@ -279,7 +283,7 @@ uint64_t am_gralloc_get_consumer_usage(
 }
 
 uint64_t am_gralloc_get_usage(const native_handle_t * hnd) {
-    private_handle_t const* buffer = hnd ? private_handle_t::dynamicCast(hnd) : NULL;
+    private_handle_t const* buffer = hnd ? private_handle_t::downcast(hnd) : NULL;
     if (buffer)
         return (am_gralloc_get_producer_usage(buffer) | am_gralloc_get_consumer_usage(buffer));
 
@@ -287,7 +291,7 @@ uint64_t am_gralloc_get_usage(const native_handle_t * hnd) {
 }
 
 bool am_gralloc_is_secure_buffer(const native_handle_t *hnd) {
-    private_handle_t const* buffer = hnd ? private_handle_t::dynamicCast(hnd) : NULL;
+    private_handle_t const* buffer = hnd ? private_handle_t::downcast(hnd) : NULL;
      if (NULL == buffer)
         return true;
 
@@ -298,7 +302,7 @@ bool am_gralloc_is_secure_buffer(const native_handle_t *hnd) {
 }
 
 bool am_gralloc_is_coherent_buffer(const native_handle_t * hnd) {
-    private_handle_t const* buffer = hnd ? private_handle_t::dynamicCast(hnd) : NULL;
+    private_handle_t const* buffer = hnd ? private_handle_t::downcast(hnd) : NULL;
     if (NULL == buffer)
         return false;
 
@@ -311,7 +315,7 @@ bool am_gralloc_is_coherent_buffer(const native_handle_t * hnd) {
 }
 
 bool am_gralloc_is_overlay_buffer(const native_handle_t * hnd) {
-     private_handle_t const* buffer = hnd ? private_handle_t::dynamicCast(hnd) : NULL;
+     private_handle_t const* buffer = hnd ? private_handle_t::downcast(hnd) : NULL;
      if (buffer && (buffer->flags & private_handle_t::PRIV_FLAGS_VIDEO_OVERLAY))
          return true;
 
@@ -320,11 +324,11 @@ bool am_gralloc_is_overlay_buffer(const native_handle_t * hnd) {
 
 bool am_gralloc_is_omx_metadata_buffer(
     const native_handle_t * hnd) {
-    private_handle_t * buffer = hnd ? private_handle_t::dynamicCast(hnd) : NULL;
+    private_handle_t * buffer = hnd ? private_handle_t::downcast(hnd) : NULL;
     if (buffer && (buffer->flags & private_handle_t::PRIV_FLAGS_VIDEO_OMX)) {
         int val = 0;
         am_gralloc_ext_get_ext_attr(hnd,
-            ArmMetadataType_AM_OMX_FLAG, &val);
+            AmlMetadataType_AM_OMX_FLAG, &val);
         if (val != AM_PRIV_ATTR_OMX_V4L_PRODUCER)
             return true;
     }
@@ -333,12 +337,12 @@ bool am_gralloc_is_omx_metadata_buffer(
 
 bool am_gralloc_is_omx_v4l_buffer(
     const native_handle_t * hnd) {
-    private_handle_t * buffer = hnd ? private_handle_t::dynamicCast(hnd) : NULL;
+    private_handle_t * buffer = hnd ? private_handle_t::downcast(hnd) : NULL;
 
     if (buffer && (buffer->flags & private_handle_t::PRIV_FLAGS_VIDEO_OMX)) {
         int val = 0;
         am_gralloc_ext_get_ext_attr(buffer,
-            ArmMetadataType_AM_OMX_FLAG, &val);
+            AmlMetadataType_AM_OMX_FLAG, &val);
         if (val == AM_PRIV_ATTR_OMX_V4L_PRODUCER)
             return true;
     }
@@ -346,7 +350,7 @@ bool am_gralloc_is_omx_v4l_buffer(
  }
 
 bool am_gralloc_is_uvm_dma_buffer(const native_handle_t *hnd) {
-    private_handle_t * buffer = hnd ? private_handle_t::dynamicCast(hnd) : NULL;
+    private_handle_t * buffer = hnd ? private_handle_t::downcast(hnd) : NULL;
 
     if (buffer && (buffer->flags & private_handle_t::PRIV_FLAGS_UVM_BUFFER))
         return true;
@@ -356,12 +360,12 @@ bool am_gralloc_is_uvm_dma_buffer(const native_handle_t *hnd) {
 
  int am_gralloc_get_omx_metadata_tunnel(
     const native_handle_t * hnd, int * tunnel) {
-    private_handle_t * buffer = hnd ? private_handle_t::dynamicCast(hnd) : NULL;
+    private_handle_t * buffer = hnd ? private_handle_t::downcast(hnd) : NULL;
     int ret = GRALLOC1_ERROR_NONE;
     if (buffer) {
         int val;
         ret = am_gralloc_ext_get_ext_attr(hnd,
-            ArmMetadataType_AM_OMX_TUNNEL, &val);
+            AmlMetadataType_AM_OMX_TUNNEL, &val);
         if (ret == GRALLOC1_ERROR_NONE) {
             if (val == 1)
                 *tunnel = 1;
@@ -377,12 +381,12 @@ bool am_gralloc_is_uvm_dma_buffer(const native_handle_t *hnd) {
 
  int am_gralloc_set_omx_metadata_tunnel(
     const native_handle_t * hnd, int tunnel) {
-     private_handle_t * buffer = hnd ? private_handle_t::dynamicCast(hnd) : NULL;
+     private_handle_t * buffer = hnd ? private_handle_t::downcast(hnd) : NULL;
      int ret = GRALLOC1_ERROR_NONE;
 
     if (buffer) {
         ret = am_gralloc_ext_set_ext_attr(buffer,
-            ArmMetadataType_AM_OMX_TUNNEL, tunnel);
+            AmlMetadataType_AM_OMX_TUNNEL, tunnel);
     } else {
         ret = GRALLOC1_ERROR_BAD_HANDLE;
     }
@@ -392,12 +396,12 @@ bool am_gralloc_is_uvm_dma_buffer(const native_handle_t *hnd) {
 
  int am_gralloc_get_omx_video_type(
     const native_handle_t * hnd, int * video_type) {
-    private_handle_t * buffer = hnd ? private_handle_t::dynamicCast(hnd) : NULL;
+    private_handle_t * buffer = hnd ? private_handle_t::downcast(hnd) : NULL;
     int ret = GRALLOC1_ERROR_NONE;
     if (buffer) {
         int val;
         ret = am_gralloc_ext_get_ext_attr(hnd,
-            ArmMetadataType_AM_OMX_VIDEO_TYPE, &val);
+            AmlMetadataType_AM_OMX_VIDEO_TYPE, &val);
         if (ret == GRALLOC1_ERROR_NONE) {
             *video_type = val;
         }
@@ -410,12 +414,12 @@ bool am_gralloc_is_uvm_dma_buffer(const native_handle_t *hnd) {
 
  int am_gralloc_set_omx_video_type(
     const native_handle_t * hnd, int video_type) {
-     private_handle_t * buffer = hnd ? private_handle_t::dynamicCast(hnd) : NULL;
+     private_handle_t * buffer = hnd ? private_handle_t::downcast(hnd) : NULL;
      int ret = GRALLOC1_ERROR_NONE;
 
     if (buffer) {
         ret = am_gralloc_ext_set_ext_attr(buffer,
-            ArmMetadataType_AM_OMX_VIDEO_TYPE, video_type);
+            AmlMetadataType_AM_OMX_VIDEO_TYPE, video_type);
     } else {
         ret = GRALLOC1_ERROR_BAD_HANDLE;
     }
@@ -521,7 +525,7 @@ int am_gralloc_get_sideband_type(const native_handle_t* hnd, int* type) {
 
 #ifdef GRALLOC_USE_GRALLOC1_API
 int am_gralloc_get_vpu_afbc_mask(const native_handle_t * hnd) {
-    private_handle_t const* buffer = hnd ? private_handle_t::dynamicCast(hnd) : NULL;
+    private_handle_t const* buffer = hnd ? private_handle_t::downcast(hnd) : NULL;
 
     if (buffer) {
         uint64_t internalFormat = buffer->internal_format;
@@ -563,7 +567,7 @@ int am_gralloc_get_vpu_afbc_mask(const native_handle_t * hnd) {
 }
 #else
 int am_gralloc_get_vpu_afbc_mask(const native_handle_t * hnd) {
-    private_handle_t const* buffer = hnd ? private_handle_t::dynamicCast(hnd) : NULL;
+    private_handle_t const* buffer = hnd ? private_handle_t::downcast(hnd) : NULL;
 
     if (buffer) {
         uint64_t internalFormat = buffer->alloc_format;
@@ -605,7 +609,7 @@ int am_gralloc_get_vpu_afbc_mask(const native_handle_t * hnd) {
 }
 
 int am_gralloc_get_omx_v4l_file(const native_handle_t * hnd) {
-    private_handle_t const* buffer = hnd ? private_handle_t::dynamicCast(hnd) : NULL;
+    private_handle_t const* buffer = hnd ? private_handle_t::downcast(hnd) : NULL;
 
     if (buffer && buffer->am_extend_type == 0) {
         return buffer->am_extend_fd;
@@ -618,12 +622,12 @@ int am_gralloc_get_omx_v4l_file(const native_handle_t * hnd) {
 
 int am_gralloc_attr_set_omx_v4l_producer_flag(
     native_handle_t * hnd) {
-    private_handle_t * buffer = hnd ? private_handle_t::dynamicCast(hnd) : NULL;
+    private_handle_t * buffer = hnd ? private_handle_t::downcast(hnd) : NULL;
 
     if (buffer) {
         int val = AM_PRIV_ATTR_OMX_V4L_PRODUCER;
         am_gralloc_ext_set_ext_attr(buffer,
-            ArmMetadataType_AM_OMX_FLAG, val);
+            AmlMetadataType_AM_OMX_FLAG, val);
     }
 
     return -1;
@@ -631,12 +635,12 @@ int am_gralloc_attr_set_omx_v4l_producer_flag(
 
 int am_gralloc_attr_set_omx_pts_producer_flag(
     native_handle_t * hnd) {
-    private_handle_t * buffer = hnd ? private_handle_t::dynamicCast(hnd) : NULL;
+    private_handle_t * buffer = hnd ? private_handle_t::downcast(hnd) : NULL;
 
     if (buffer) {
         int val = AM_PRIV_ATTR_OMX_PTS_PRODUCER;
         am_gralloc_ext_set_ext_attr(buffer,
-            ArmMetadataType_AM_OMX_FLAG, val);
+            AmlMetadataType_AM_OMX_FLAG, val);
     }
 
     return -1;
@@ -650,20 +654,20 @@ uint64_t am_gralloc_get_enc_coherent_usage() {
 
 
 int am_gralloc_set_ext_attr(const native_handle_t * hnd, uint32_t attr, int val) {
-    private_handle_t * buffer = hnd ? private_handle_t::dynamicCast(hnd) : NULL;
+    private_handle_t * buffer = hnd ? private_handle_t::downcast(hnd) : NULL;
     int ret = GRALLOC1_ERROR_NONE;
 
     if (buffer) {
     IMapper::MetadataType type;
     switch (attr) {
         case GRALLOC_BUFFER_ATTR_AM_OMX_TUNNEL:
-            type = ArmMetadataType_AM_OMX_TUNNEL;
+            type = AmlMetadataType_AM_OMX_TUNNEL;
             break;
         case GRALLOC_BUFFER_ATTR_AM_OMX_FLAG:
-            type = ArmMetadataType_AM_OMX_FLAG;
+            type = AmlMetadataType_AM_OMX_FLAG;
             break;
         case GRALLOC_BUFFER_ATTR_AM_OMX_VIDEO_TYPE:
-            type = ArmMetadataType_AM_OMX_VIDEO_TYPE;
+            type = AmlMetadataType_AM_OMX_VIDEO_TYPE;
             break;
         case GRALLOC_BUFFER_ATTR_AM_OMX_BUFFER_SEQUENCE:
             /*GRALLOC_BUFFER_ATTR_AM_OMX_BUFFER_SEQUENCE: -1 is invalid value*/
@@ -671,7 +675,7 @@ int am_gralloc_set_ext_attr(const native_handle_t * hnd, uint32_t attr, int val)
                 ALOGE("Set invalid value for OMX_BUFFER_SEQUENCE");
                 return GRALLOC1_ERROR_BAD_VALUE;
             } else {
-                type = ArmMetadataType_AM_OMX_BUFFER_SEQUENCE;
+                type = AmlMetadataType_AM_OMX_BUFFER_SEQUENCE;
                 break;
             }
         default:
@@ -687,12 +691,12 @@ int am_gralloc_set_ext_attr(const native_handle_t * hnd, uint32_t attr, int val)
 }
 
 bool am_gralloc_get_omx_buffer_sequence(const native_handle_t * hnd, int *val) {
-    private_handle_t * buffer = hnd ? private_handle_t::dynamicCast(hnd) : NULL;
+    private_handle_t * buffer = hnd ? private_handle_t::downcast(hnd) : NULL;
     if (buffer && (buffer->flags & private_handle_t::PRIV_FLAGS_VIDEO_OMX)) {
         int ret = GRALLOC1_ERROR_NONE;
         int omx_buffer_sequence;
         ret = am_gralloc_ext_get_ext_attr(hnd,
-                ArmMetadataType_AM_OMX_BUFFER_SEQUENCE, &omx_buffer_sequence);
+                AmlMetadataType_AM_OMX_BUFFER_SEQUENCE, &omx_buffer_sequence);
         if (ret == GRALLOC1_ERROR_NONE) {
             *val = omx_buffer_sequence;
             return true;

@@ -33,14 +33,4 @@ enum ArmMetadataType {
      * android.hardware.graphics.common.StandardMetadataType::PLANE_LAYOUTS
      */
     PLANE_FDS = 1,
-    /* Amlogic: set tunnel index for omx video for pip.*/
-    AM_OMX_TUNNEL = 2,
-
-    /* Extend by aml for update the omx flag pts/v4l */
-    AM_OMX_FLAG = 3,
-
-    /* Extend by aml for update the omx video_type */
-    AM_OMX_VIDEO_TYPE = 4,
-    /* Extend by aml for update the omx buffer sequence*/
-    AM_OMX_BUFFER_SEQUENCE = 5,
 }

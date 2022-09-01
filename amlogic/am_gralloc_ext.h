@@ -11,6 +11,7 @@
 #define AM_GRALLOC_EXT_H
 
 #include <utils/NativeHandle.h>
+#include "am_gralloc_ref.h"
 
 
 bool am_gralloc_is_valid_graphic_buffer(const native_handle_t * hnd);

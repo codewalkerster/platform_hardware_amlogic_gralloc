@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 Arm Limited.
+ * Copyright (C) 2020-2022 Arm Limited.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,128 +15,56 @@
  * limitations under the License.
  */
 
-package {
-    // See: http://go/android-license-faq
-    // A large-scale-change added 'default_applicable_licenses' to import
-    // all of the 'license_kinds' from "hardware_amlogic_license"
-    // to get the below license kinds:
-    //   SPDX-license-identifier-Apache-2.0
-    default_applicable_licenses: ["hardware_amlogic_license"],
-}
-
 soong_config_module_type {
-    name: "arm_gralloc_allocator_cc_defaults",
-    module_type: "cc_defaults",
-    config_namespace: "arm_gralloc",
-    variables: [
-        "alloc_scanout",
-        "gralloc_use_ion_dma_heap",
-        "gralloc_use_ion_compound_page_heap",
-        "gralloc_init_afbc",
-        "gralloc_use_ion_dmabuf_sync",
-        "gralloc_use_new_ion",
-        "build_kernel_4_9",
-    ],
-    properties: [
-        "cflags",
-    ],
+	name: "arm_gralloc_allocator_cc_defaults",
+	module_type: "cc_defaults",
+	config_namespace: "arm_gralloc",
+	variables: [
+		"gralloc_use_ion_dma_heap",
+		"gralloc_use_contiguous_display_memory",
+	],
+	properties: [
+		"cflags",
+	],
 }
 
 soong_config_bool_variable {
-    name: "alloc_scanout",
+	name: "gralloc_use_ion_dma_heap",
 }
 soong_config_bool_variable {
-    name: "gralloc_use_ion_dma_heap",
-}
-soong_config_bool_variable {
-    name: "gralloc_use_ion_compound_page_heap",
-}
-soong_config_bool_variable {
-    name: "gralloc_init_afbc",
-}
-soong_config_bool_variable {
-    name: "gralloc_use_ion_dmabuf_sync",
-}
-soong_config_bool_variable {
-    name: "gralloc_use_new_ion",
-}
-soong_config_bool_variable {
-    name: "build_kernel_4_9",
+	name: "gralloc_use_contiguous_display_memory",
 }
 
 arm_gralloc_allocator_cc_defaults {
-    name: "arm_gralloc_allocator_defaults",
-    defaults: [
-        "arm_gralloc_defaults",
-    ],
-    soong_config_variables: {
-        alloc_scanout: {
-            cflags: [
-                "-DAML_ALLOC_SCANOUT_FOR_COMPOSE=1",
-            ],
-        },
-        gralloc_use_ion_dma_heap: {
-            cflags: [
-                "-DGRALLOC_USE_ION_DMA_HEAP=1",
-            ],
-        },
-        gralloc_use_ion_compound_page_heap: {
-            cflags: [
-                "-DGRALLOC_USE_ION_COMPOUND_PAGE_HEAP=1",
-            ],
-        },
-        gralloc_init_afbc: {
-            cflags: [
-                "-DGRALLOC_INIT_AFBC=1",
-            ],
-        },
-        gralloc_use_ion_dmabuf_sync: {
-            cflags: [
-                "-DGRALLOC_USE_ION_DMABUF_SYNC=1",
-            ],
-        },
-        gralloc_use_new_ion: {
-            cflags: [
-                "-DGRALLOC_USE_NEW_ION=1",
-            ],
-        },
-        build_kernel_4_9: {
-            cflags: [
-                "-DBUILD_KERNEL_4_9=1",
-            ],
-        },
-    },
-    srcs: [
-        "mali_gralloc_ion.cpp",
-        "mali_gralloc_shared_memory.cpp",
-    ],
-    cflags: [
-        "-DGRALLOC_AML_EXTEND=1",
-    ],
-    include_dirs: [
-        "hardware/amlogic/gralloc/amlogic",
-    ],
-    static_libs: [
-        "libarect",
-    ],
-    shared_libs: [
-        "libhardware",
-        "liblog",
-        "libcutils",
-        "libion",
-        "libsync",
-        "libutils",
-        "libnativewindow",
-    ],
-    header_libs: [
-        "libnativebase_headers",
-    ],
-}
-
-cc_library_static {
-    name: "libgralloc_allocator",
-    defaults: [
-        "arm_gralloc_allocator_defaults",
-        "arm_gralloc_version_defaults",
-    ],
+	name: "arm_gralloc_allocator_defaults",
+	defaults: [
+		"arm_gralloc_defaults",
+	],
+	soong_config_variables: {
+		gralloc_use_ion_dma_heap: {
+			cflags: [
+				"-DGRALLOC_USE_ION_DMA_HEAP=1",
+			],
+		},
+		gralloc_use_contiguous_display_memory: {
+			cflags: [
+				"-DGRALLOC_USE_CONTIGUOUS_DISPLAY_MEMORY=1",
+			],
+		},
+	},
+	static_libs: [
+		"libarect",
+	],
+	shared_libs: [
+		"libhardware",
+		"liblog",
+		"libcutils",
+		"libion",
+		"libsync",
+		"libutils",
+		"libnativewindow",
+	],
+	header_libs: [
+		"libnativebase_headers",
+	],
 }

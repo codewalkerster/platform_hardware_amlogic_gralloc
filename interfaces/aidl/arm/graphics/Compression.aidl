@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 Arm Limited.
+ * Copyright (C) 2020-2021 Arm Limited.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -19,13 +19,18 @@ package arm.graphics;
 
 /**
  * Used by IAllocator/IMapper (gralloc) to describe Arm compression strategies
+ * For details query the buffer's DRM Modifier using the metadata type
+ * aidl::android::hardware::graphics::common::StandardMetadataType::PIXEL_FORMAT_MODIFIER
  */
 @VintfStability
 @Backing(type="long")
 enum Compression {
     /**
-     * Arm Framebuffer Compression. For details query the buffer's DRM Modifier using the metadata type
-     * aidl::android::hardware::graphics::common::StandardMetadataType::PIXEL_FORMAT_MODIFIER
+     * Arm Framebuffer Compression
      */
     AFBC = 0,
+    /**
+     * Arm Fixed Rate Compression
+     */
+    AFRC = 1,
 }

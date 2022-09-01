@@ -15,40 +15,31 @@
  * limitations under the License.
  */
 
-package {
-    // See: http://go/android-license-faq
-    // A large-scale-change added 'default_applicable_licenses' to import
-    // all of the 'license_kinds' from "hardware_amlogic_license"
-    // to get the below license kinds:
-    //   SPDX-license-identifier-Apache-2.0
-    default_applicable_licenses: ["hardware_amlogic_license"],
-}
-
 filegroup {
 	name: "libgralloc_hidl_common_allocator",
 	srcs: [
-		"Allocator.cpp",
+		"allocator.cpp",
 	],
 }
 
 filegroup {
 	name: "libgralloc_hidl_common_mapper",
 	srcs: [
-		"Mapper.cpp",
-		"RegisteredHandlePool.cpp",
+		"mapper.cpp",
+		"registered_handle_pool.cpp",
 	],
 }
 
 filegroup {
 	name: "libgralloc_hidl_common_mapper_metadata",
 	srcs: [
-		"MapperMetadata.cpp",
+		"mapper_metadata.cpp",
 	],
 }
 
 filegroup {
 	name: "libgralloc_hidl_common_shared_metadata",
 	srcs: [
-		"SharedMetadata.cpp",
+		"shared_metadata.cpp",
 	],
 }

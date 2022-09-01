@@ -18,28 +18,28 @@
 filegroup {
 	name: "libgralloc_hidl_common_allocator",
 	srcs: [
-		"Allocator.cpp",
+		"allocator.cpp",
 	],
 }
 
 filegroup {
 	name: "libgralloc_hidl_common_mapper",
 	srcs: [
-		"Mapper.cpp",
-		"RegisteredHandlePool.cpp",
+		"mapper.cpp",
+		"registered_handle_pool.cpp",
 	],
 }
 
 filegroup {
 	name: "libgralloc_hidl_common_mapper_metadata",
 	srcs: [
-		"MapperMetadata.cpp",
+		"mapper_metadata.cpp",
 	],
 }
 
 filegroup {
 	name: "libgralloc_hidl_common_shared_metadata",
 	srcs: [
-		"SharedMetadata.cpp",
+		"shared_metadata.cpp",
 	],
 }

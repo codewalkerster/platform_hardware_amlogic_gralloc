@@ -48,9 +48,9 @@ license {
 
 cc_library_shared {
     name: "libamgralloc_ext",
-	defaults: [
+    defaults: [
     "gralloc_go_defaults",
-    ],		
+    ],
     vendor_available: true,
     system_ext_specific: true,
     shared_libs: [
@@ -70,6 +70,11 @@ cc_library_shared {
     ],
     include_dirs: [
         "hardware/amlogic/gralloc/src",
+        "hardware/amlogic/gralloc/src/include",
+        "hardware/amlogic/gralloc/interfaces/aidl",
+    ],
+    header_libs: [
+        "libgralloc_headers",
     ],
     srcs: ["am_gralloc_ext.cpp"],
     export_include_dirs: ["."],
@@ -77,9 +82,9 @@ cc_library_shared {
 
 cc_library_static {
     name: "libamgralloc_ext_static",
-	defaults: [
-	"gralloc_go_defaults",
-	],
+    defaults: [
+    "gralloc_go_defaults",
+    ],
     proprietary: true,
     shared_libs: [
         "liblog",
@@ -96,11 +101,16 @@ cc_library_static {
     ],
     include_dirs: [
         "hardware/amlogic/gralloc/src",
+        "hardware/amlogic/gralloc/src/include",
+        "hardware/amlogic/gralloc/interfaces/aidl",
+    ],
+    header_libs: [
+        "libgralloc_headers",
     ],
     srcs: ["am_gralloc_ext.cpp"],
 }
 
-// Internal static lib for amlogic extend gralloc
+// Interal static lib for amlogic extend gralloc
 cc_library_static {
     name: "libamgralloc_internal_static",
     proprietary: true,
@@ -114,6 +124,7 @@ cc_library_static {
     ],
     include_dirs: [
         "hardware/amlogic/gralloc/src",
+        "hardware/amlogic/gralloc/src/include",
     ],
     shared_libs: [
         "liblog",

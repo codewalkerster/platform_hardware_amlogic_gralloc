@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 Arm Limited.
+ * Copyright (C) 2020-2022 Arm Limited.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -21,9 +21,7 @@ soong_config_module_type {
 	config_namespace: "arm_gralloc",
 	variables: [
 		"gralloc_use_ion_dma_heap",
-		"gralloc_use_ion_compound_page_heap",
-		"gralloc_init_afbc",
-		"gralloc_use_ion_dmabuf_sync",
+		"gralloc_use_contiguous_display_memory",
 	],
 	properties: [
 		"cflags",
@@ -34,13 +32,7 @@ soong_config_bool_variable {
 	name: "gralloc_use_ion_dma_heap",
 }
 soong_config_bool_variable {
-	name: "gralloc_use_ion_compound_page_heap",
-}
-soong_config_bool_variable {
-	name: "gralloc_init_afbc",
-}
-soong_config_bool_variable {
-	name: "gralloc_use_ion_dmabuf_sync",
+	name: "gralloc_use_contiguous_display_memory",
 }
 
 arm_gralloc_allocator_cc_defaults {
@@ -54,26 +46,12 @@ arm_gralloc_allocator_cc_defaults {
 				"-DGRALLOC_USE_ION_DMA_HEAP=1",
 			],
 		},
-		gralloc_use_ion_compound_page_heap: {
+		gralloc_use_contiguous_display_memory: {
 			cflags: [
-				"-DGRALLOC_USE_ION_COMPOUND_PAGE_HEAP=1",
-			],
-		},
-		gralloc_init_afbc: {
-			cflags: [
-				"-DGRALLOC_INIT_AFBC=1",
-			],
-		},
-		gralloc_use_ion_dmabuf_sync: {
-			cflags: [
-				"-DGRALLOC_USE_ION_DMABUF_SYNC=1",
+				"-DGRALLOC_USE_CONTIGUOUS_DISPLAY_MEMORY=1",
 			],
 		},
 	},
-	srcs: [
-		"mali_gralloc_ion.cpp",
-		"mali_gralloc_shared_memory.cpp",
-	],
 	static_libs: [
 		"libarect",
 	],
@@ -88,13 +66,5 @@ arm_gralloc_allocator_cc_defaults {
 	],
 	header_libs: [
 		"libnativebase_headers",
-	],
-}
-
-cc_library_static {
-	name: "libgralloc_allocator",
-	defaults: [
-		"arm_gralloc_allocator_defaults",
-		"arm_gralloc_version_defaults",
 	],
 }

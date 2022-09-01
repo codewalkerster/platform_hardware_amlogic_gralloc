@@ -8,15 +8,11 @@
  */
 
 #include "am_gralloc_internal.h"
-#include <gralloc_priv.h>
 #include <sys/ioctl.h>
+#include <buffer.h>
 
 #define V4LVIDEO_IOC_MAGIC  'I'
 #define V4LVIDEO_IOCTL_ALLOC_FD   _IOW(V4LVIDEO_IOC_MAGIC, 0x02, int)
-
-
-#include "am_gralloc_internal.h"
-#include <hardware/gralloc1.h>
 
 #define UNUSED(x) (void)x
 

@@ -20,8 +20,4 @@ package arm.graphics;
 enum ArmMetadataType {
   INVALID = 0,
   PLANE_FDS = 1,
-  AM_OMX_TUNNEL = 2,
-  AM_OMX_FLAG = 3,
-  AM_OMX_VIDEO_TYPE = 4,
-  AM_OMX_BUFFER_SEQUENCE = 5,
 }
