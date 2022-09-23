@@ -22,7 +22,7 @@
 
 #include <log/log.h>
 
-#define AML_GRALLOC_DEBUG 1
+//#define AML_GRALLOC_DEBUG 1
 /* Delegate logging to Android */
 #ifdef AML_GRALLOC_DEBUG
 #define AML_GRALLOC_LOGI(...) ALOGI(__VA_ARGS__)

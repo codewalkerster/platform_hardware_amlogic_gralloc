@@ -199,7 +199,7 @@ int am_gralloc_get_format(const native_handle_t * hnd) {
 int am_gralloc_get_buffer_fd(const native_handle_t * hnd) {
     private_handle_t const* buffer = hnd ? private_handle_t::downcast(hnd) : NULL;
     if (buffer) {
-        ALOGD("[%s] share_fd:%d", __FUNCTION__, buffer->share_fd);
+        ALOGV("[%s] share_fd:%d", __FUNCTION__, buffer->share_fd);
         return buffer->share_fd;
     }
 
