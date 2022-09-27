@@ -226,7 +226,7 @@ void mali_gralloc_adjust_dimensions(const internal_format_t alloc_format,
 	}
 #endif
 
-	MALI_GRALLOC_LOG(ERROR) << __FUNCTION__ << ": alloc_format=" << alloc_format
+	MALI_GRALLOC_LOG(VERBOSE) << __FUNCTION__ << ": alloc_format=" << alloc_format
 	                          << " usage=" << std::showbase << std::hex << usage << std::dec
 	                          << " alloc_width=" << *width << ", alloc_height=" << *height;
 }

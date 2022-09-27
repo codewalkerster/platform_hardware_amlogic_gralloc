@@ -586,13 +586,31 @@ void get_metadata(const private_handle_t *handle, const IMapper::MetadataType &m
 
 static bool isSupportedDataSpace(Dataspace dataspace)
 {
-	switch (static_cast<android_dataspace_t>(dataspace) & 0xffff)
+	uint32_t standard = static_cast<android_dataspace_t>(dataspace) & HAL_DATASPACE_STANDARD_MASK;
+	uint32_t range = static_cast<android_dataspace_t>(dataspace) & HAL_DATASPACE_RANGE_MASK;
+
+	if (standard > 0 || range > 0)
+		MALI_GRALLOC_LOGV("%s DATASPACE: standard [%d] range [%d]", __FUNCTION__, standard, range);
+
+	switch (standard)
 	{
-	case HAL_DATASPACE_UNKNOWN:
-	case HAL_DATASPACE_BT601_525:
-		return false;
-	default:
+	case HAL_DATASPACE_STANDARD_BT601_625:
+	case HAL_DATASPACE_STANDARD_BT601_525:
+	case HAL_DATASPACE_STANDARD_BT709:
+	case HAL_DATASPACE_STANDARD_BT2020:
 		return true;
+	case HAL_DATASPACE_UNKNOWN:
+		switch (static_cast<android_dataspace_t>(dataspace) & 0xffff)
+		{
+		case HAL_DATASPACE_UNKNOWN:
+			return false;
+		default:
+			return true;
+		}
+		break;
+	default:
+		ALOGE("Unsupported dataspace standard (%" PRIu32 ")", standard);
+		return false;
 	}
 }
 
