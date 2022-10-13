@@ -509,8 +509,12 @@ static int am_gralloc_exec_uvm_policy(
 
 		if (usage & GRALLOC_USAGE_PROTECTED)
 			agu->uvm_flag |= UVM_USAGE_PROTECTED;
+
 		if ((usage & GRALLOC_USAGE_SW_READ_MASK) == GRALLOC_USAGE_SW_READ_OFTEN)
 			agu->uvm_flag |= UVM_USAGE_CACHED;
+
+		if (usage & GRALLOC_USAGE_PRIVATE_3)
+			agu->uvm_flag |= UVM_FBC_DEC;
 
 		if (am_gralloc_is_video_decoder_OSD_buffer_usage(usage))
 			agu->uvm_flag |= UVM_SKIP_REALLOC;
@@ -525,7 +529,7 @@ static int am_gralloc_exec_uvm_policy(
 
 		struct uvm_alloc_data uad = {
 			.size = (int)bufDescriptor->size,
-			.byte_stride = bufDescriptor->pixel_stride,
+			.byte_stride = (int)bufDescriptor->plane_info[0].byte_stride,
 			.width = bufDescriptor->width,
 			.height = bufDescriptor->height,
 			.align = aligned_bit,

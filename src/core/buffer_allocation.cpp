@@ -511,7 +511,7 @@ static void calc_allocation_size(const int width,
 		              alloc_type,
 		              plane,
 		              has_cpu_usage);
-		MALI_GRALLOC_LOGV("Aligned w=%d, h=%d (in pixels)",
+		MALI_GRALLOC_LOGV("Plane[%d] Aligned w=%d, h=%d (in pixels)", plane,
 		      plane_info[plane].alloc_width, plane_info[plane].alloc_height);
 
 		/*
@@ -816,6 +816,7 @@ int mali_gralloc_derive_format_and_size(buffer_descriptor_t *descriptor)
 		return -EINVAL;
 	}
 	MALI_GRALLOC_LOG(VERBOSE) << "alloc_format: " << descriptor->alloc_format;
+	MALI_GRALLOC_LOG(VERBOSE) << "hal_format: " << descriptor->hal_format;
 
 	/*
 	 * Obtain allocation type (uncompressed, AFBC basic, etc...)

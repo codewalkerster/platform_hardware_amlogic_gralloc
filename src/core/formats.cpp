@@ -222,7 +222,8 @@ void mali_gralloc_adjust_dimensions(const internal_format_t alloc_format,
 	if (need_do_width_height_align(usage, *width, *height))
 	{
 		*width = GRALLOC_ALIGN(*width, 64);
-		*height = GRALLOC_ALIGN(*height, 64);
+		if (!(usage & GRALLOC1_CONSUMER_USAGE_PRIVATE_3 ))
+			*height = GRALLOC_ALIGN(*height, 64);
 	}
 #endif
 
