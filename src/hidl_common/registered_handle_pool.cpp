@@ -16,6 +16,7 @@
  * limitations under the License.
  */
 
+#include <inttypes.h>
 #include "registered_handle_pool.h"
 
 bool RegisteredHandlePool::add(buffer_handle_t bufferHandle)
@@ -47,7 +48,7 @@ static bool aml_getINodeFromFd(int32_t fd, uint64_t *ino)
         return false;
     } else {
         *ino = st.st_ino;
-        MALI_GRALLOC_LOGV("%s st.st_ino:%llu st.st_size:%llu",
+        MALI_GRALLOC_LOGV("%s st.st_ino:%" PRIu64 " st.st_size:%" PRIu64 " ",
                 __FUNCTION__, st.st_ino, st.st_size);
         return true;
     }
@@ -63,7 +64,7 @@ static bool aml_compare_fd(int32_t inFd, int32_t poolFd)
         return false;
     } else {
         if (inFd_ino == poolFd_ino) {
-            MALI_GRALLOC_LOGV("%s match fd! inFd:%d poolFd:%d inFd_ino:%llu poolFd_ino:%llu",
+            MALI_GRALLOC_LOGV("%s match fd! inFd:%d poolFd:%d inFd_ino:%" PRIu64 " poolFd_ino:%" PRIu64 " ",
                 __FUNCTION__, inFd, poolFd, inFd_ino, poolFd_ino);
             return true;
         }
