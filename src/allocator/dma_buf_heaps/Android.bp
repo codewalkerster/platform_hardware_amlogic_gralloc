@@ -21,6 +21,9 @@
  * require instead users of libgralloc_allocator to include these
  * libgralloc_allocator_dependencies in their cc_defaults section.
  */
+package {
+    default_applicable_licenses: ["hardware_amlogic_license"],
+}
 cc_defaults {
     name: "libgralloc_allocator_dependencies",
     shared_libs: ["libdmabufheap"],

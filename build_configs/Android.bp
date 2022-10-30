@@ -19,6 +19,9 @@
  * This file contains the default build options that are used for Gralloc
  * release builds which is the default build configuration.
  */
+package {
+    default_applicable_licenses: ["hardware_amlogic_license"],
+}
 cc_defaults {
 	name: "arm_gralloc_build_defaults",
 }
