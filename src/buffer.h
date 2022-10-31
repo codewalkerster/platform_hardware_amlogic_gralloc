@@ -171,7 +171,7 @@ struct private_handle_t : public native_handle
 	uint64_t producer_usage{};
 	uint64_t consumer_usage{};
 
-	/* DEPRECATED. Kept for valiation purposes */
+	/* DEPRECATED. Kept for validation purposes */
 	int stride{};
 
 	/*

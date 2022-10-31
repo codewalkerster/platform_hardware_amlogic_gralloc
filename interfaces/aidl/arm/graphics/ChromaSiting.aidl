@@ -25,7 +25,7 @@ package arm.graphics;
 /* Temporary values intended to not clash with any new official values that may be added */
 enum ChromaSiting {
     /**
-     * Vertical cosited, Horizontally interstitially
+     * Vertical cosited, Horizontally interstitial
      */
     COSITED_VERTICAL = 1 << 8,
     /**
