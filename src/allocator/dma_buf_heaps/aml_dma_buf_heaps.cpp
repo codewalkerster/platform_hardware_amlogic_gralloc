@@ -158,6 +158,7 @@ static int am_gralloc_exec_uvm_policy(
 					const buffer_descriptor_t *bufDescriptor,
 					uint64_t usage,
 					struct uvm_exec_data *agu);
+bool is_android_yuv_format(int req_format);
 
 static const char *get_dma_buf_heap_name(dma_buf_heap heap)
 {
@@ -274,6 +275,30 @@ int allocator_allocate(const buffer_descriptor_t *descriptor, private_handle_t *
 			}
 		}
 	}
+
+	/* workaournd for cts-on-gsi
+	 * android.media.cts.EncodeVirtualDisplayTest#testEncodeVirtualDisplay
+	 */
+	if ((shared_fd >= 0) &&
+		(!is_android_yuv_format(descriptor->hal_format)) &&
+		(usage & GRALLOC_USAGE_HW_VIDEO_ENCODER) &&
+		(usage & GRALLOC_USAGE_HW_RENDER)) {
+		uint32_t map_size = descriptor->size;
+		void *vaddr = mmap(NULL, map_size,
+			PROT_READ | PROT_WRITE, MAP_SHARED, shared_fd, 0);
+		if (vaddr == MAP_FAILED) {
+			MALI_GRALLOC_LOGE("%s, mmap failed=%d",
+			__func__, shared_fd);
+		} else {
+			memset(vaddr, 0, map_size);
+			munmap(vaddr, map_size);
+			#ifdef AML_GRALLOC_DEBUG
+			AML_GRALLOC_LOGI("%s:%d bufDescriptor->size:%d usage=0x%" PRIx64,
+			    __FUNCTION__, __LINE__, descriptor->size, usage);
+			#endif
+		}
+	}
+
 	android::base::unique_fd fd(shared_fd);
 	*out_handle = make_private_handle(
 	    agu->uvm_buffer_flag, descriptor->size,
