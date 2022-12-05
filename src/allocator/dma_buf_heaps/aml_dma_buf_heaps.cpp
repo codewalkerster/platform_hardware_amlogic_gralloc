@@ -148,6 +148,9 @@ const custom_heap custom_heaps[] =
 	protected_memory_heap,
 };
 
+void am_gralloc_set_buffer_flags(
+					dma_buf_heap heap, uint64_t usage,
+					unsigned int *priv_buffer_flag);
 enum dma_buf_heap am_gralloc_pick_dma_buf_heap(
 					const buffer_descriptor_t *descriptor,
 					uint64_t usage);
@@ -197,37 +200,15 @@ static BufferAllocator *get_global_buffer_allocator()
 	return &instance.allocator;
 }
 
-static dma_buf_heap pick_dma_buf_heap(uint64_t usage)
-{
-	if (usage & GRALLOC_USAGE_PROTECTED)
-	{
-		return dma_buf_heap::protected_memory;
-	}
-	else if (!(usage & GRALLOC_USAGE_HW_VIDEO_ENCODER) && (usage & GRALLOC_USAGE_HW_FB))
-	{
-#if defined(GRALLOC_USE_CONTIGUOUS_DISPLAY_MEMORY) && GRALLOC_USE_CONTIGUOUS_DISPLAY_MEMORY
-		return dma_buf_heap::physically_contiguous;
-#else
-		return dma_buf_heap::system;
-#endif
-	}
-	else if ((usage & GRALLOC_USAGE_SW_READ_MASK) == GRALLOC_USAGE_SW_READ_OFTEN)
-	{
-		return dma_buf_heap::system;
-	}
-	else
-	{
-		return dma_buf_heap::system_uncached;
-	}
-}
-
 int allocator_allocate(const buffer_descriptor_t *descriptor, private_handle_t **out_handle)
 {
+	unsigned int priv_buffer_flag = 0;
 	auto allocator = get_global_buffer_allocator();
 
 	uint64_t usage = descriptor->consumer_usage | descriptor->producer_usage;
 	auto heap = am_gralloc_pick_dma_buf_heap(descriptor, usage);
 	auto heap_name = get_dma_buf_heap_name(heap);
+	am_gralloc_set_buffer_flags(heap, usage, &priv_buffer_flag);
 
 	struct uvm_exec_data *agu = (struct uvm_exec_data *)malloc(sizeof(uvm_exec_data));
 	int shared_fd = am_gralloc_exec_uvm_policy(descriptor, usage, agu);
@@ -266,6 +247,7 @@ int allocator_allocate(const buffer_descriptor_t *descriptor, private_handle_t *
 		else
 		{
 			MALI_GRALLOC_LOGW("libdmabufheap allocation failed for %s heap, falling back to system heap", heap_name);
+			priv_buffer_flag &= ~(am_gralloc_get_coherent_extend_flag());
 			shared_fd = allocator->Alloc(get_dma_buf_heap_name(dma_buf_heap::system), descriptor->size);
 			if (shared_fd < 0)
 			{
@@ -301,7 +283,7 @@ int allocator_allocate(const buffer_descriptor_t *descriptor, private_handle_t *
 
 	android::base::unique_fd fd(shared_fd);
 	*out_handle = make_private_handle(
-	    agu->uvm_buffer_flag, descriptor->size,
+	    agu->uvm_buffer_flag | priv_buffer_flag, descriptor->size,
 	    descriptor->consumer_usage, descriptor->producer_usage, std::move(fd), descriptor->hal_format,
 	    descriptor->alloc_format, descriptor->width, descriptor->height, descriptor->size, descriptor->layer_count,
 	    descriptor->plane_info, descriptor->pixel_stride);
@@ -574,6 +556,48 @@ static int am_gralloc_exec_uvm_policy(
 	return ret;
 }
 
+void am_gralloc_set_buffer_flags(
+					dma_buf_heap heap, uint64_t usage,
+					unsigned int *priv_buffer_flag)
+{
+	if (priv_buffer_flag)
+	{
+		int coherent_buffer_flag = am_gralloc_get_coherent_extend_flag();
+
+		if (heap == dma_buf_heap::system || heap == dma_buf_heap::system_uncached)
+		{
+			*priv_buffer_flag &= ~coherent_buffer_flag;
+		}
+		else if (heap == dma_buf_heap::physically_contiguous_gfx)
+		{
+			*priv_buffer_flag |= coherent_buffer_flag;
+		}
+		else if (heap == dma_buf_heap::physically_contiguous_codec_mm)
+		{
+			*priv_buffer_flag |= coherent_buffer_flag;
+		}
+		else if (heap == dma_buf_heap::physically_contiguous_fb)
+		{
+			*priv_buffer_flag |= coherent_buffer_flag;
+		}
+
+		/*Must check omx metadata first,
+		*for it have some same bits with video overlay.
+		*/
+		if (am_gralloc_is_omx_metadata_extend_usage(usage))
+		{
+			*priv_buffer_flag |= am_gralloc_get_omx_metadata_extend_flag();
+		}
+
+		if (am_gralloc_is_secure_extend_usage(usage))
+		{
+			*priv_buffer_flag |= am_gralloc_get_secure_extend_flag();
+		}
+
+	}
+
+}
+
 enum dma_buf_heap am_gralloc_pick_dma_buf_heap(
 	const buffer_descriptor_t *descriptor, uint64_t usage)
 {
@@ -594,13 +618,40 @@ enum dma_buf_heap am_gralloc_pick_dma_buf_heap(
 		return dma_buf_heap::physically_contiguous_codec_mm;
 	}
 
-	if (usage & GRALLOC_USAGE_HW_COMPOSER)
-	{
-		if (!is_android_yuv_format(descriptor->hal_format))
-		{
-			return dma_buf_heap::physically_contiguous_gfx;
+#if defined(GRALLOC_USE_CONTIGUOUS_DISPLAY_MEMORY) && GRALLOC_USE_CONTIGUOUS_DISPLAY_MEMORY
+		static unsigned int max_composer_buf_width = 0;
+		static unsigned int max_composer_buf_height = 0;
+
+		ALOGD("BOARD_RESOLUTION_RATIO=%d", BOARD_RESOLUTION_RATIO);
+		switch (BOARD_RESOLUTION_RATIO) {
+			case 720:
+				max_composer_buf_width = 1280;
+				max_composer_buf_height = 720;
+				break;
+			case 2160:
+				max_composer_buf_width = 3840;
+				max_composer_buf_height = 2160;
+				break;
+			case 1080:
+			default:
+				max_composer_buf_width = 1920;
+				max_composer_buf_height = 1080;
+				break;
 		}
-	}
+
+		if (usage & GRALLOC_USAGE_HW_COMPOSER)
+		{
+			if ( (descriptor->width <= max_composer_buf_width) &&
+				(descriptor->height <= max_composer_buf_height) &&
+				(!is_android_yuv_format(descriptor->hal_format)))
+			{
+				return dma_buf_heap::physically_contiguous_gfx;
+			}
+		}
+ #else
+			/*for compile warning.*/
+			descriptor;
+#endif
 
 	if ((usage & GRALLOC_USAGE_SW_READ_MASK) == GRALLOC_USAGE_SW_READ_OFTEN ||
 		am_gralloc_is_omx_metadata_extend_usage(usage))
