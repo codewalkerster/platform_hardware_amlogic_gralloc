@@ -574,7 +574,10 @@ void get_metadata(const private_handle_t *handle, const IMapper::MetadataType &m
 			err = android::gralloc4::encodeInt32(metadataType, am_omx_buffer_sequence, &vec);
 			break;
 		}
+		default:
+			err = android::BAD_VALUE;
 		}
+		hidl_cb((err) ? Error::UNSUPPORTED : Error::NONE, vec);
 	}
 #endif
 	else
