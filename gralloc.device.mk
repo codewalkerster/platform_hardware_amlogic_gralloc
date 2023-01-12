@@ -42,6 +42,7 @@ ifeq ($(GRALLOC_AML_EXTEND),1)
 BOARD_RESOLUTION_RATIO ?= 1080
 endif
 
+AML_ALLOC_SCANOUT_FOR_COMPOSE ?=0
 ifeq ($(TARGET_APP_LAYER_USE_CONTINUOUS_BUFFER),true)
 AML_ALLOC_SCANOUT_FOR_COMPOSE :=1
 endif
@@ -54,23 +55,13 @@ endif
 endif
 
 # Setup configuration in Soong namespace
-SOONG_CONFIG_NAMESPACES += arm_gralloc
-SOONG_CONFIG_arm_gralloc := \
-	gralloc_use_ion_dma_heap \
-	gralloc_use_contiguous_display_memory \
-	gralloc_hwc_force_bgra_8888 \
-	gralloc_hwc_fb_disable_afbc \
-	gralloc_arm_no_external_afbc \
-	gralloc_target_product \
-	board_resolution \
-
-SOONG_CONFIG_arm_gralloc_gralloc_use_ion_dma_heap := $(GRALLOC_USE_ION_DMA_HEAP)
-SOONG_CONFIG_arm_gralloc_gralloc_use_contiguous_display_memory := $(AML_ALLOC_SCANOUT_FOR_COMPOSE)
-SOONG_CONFIG_arm_gralloc_gralloc_hwc_force_bgra_8888 := $(GRALLOC_HWC_FORCE_BGRA_8888)
-SOONG_CONFIG_arm_gralloc_gralloc_hwc_fb_disable_afbc := $(GRALLOC_HWC_FB_DISABLE_AFBC)
-SOONG_CONFIG_arm_gralloc_gralloc_arm_no_external_afbc := $(GRALLOC_ARM_NO_EXTERNAL_AFBC)
-SOONG_CONFIG_arm_gralloc_gralloc_target_product := $(TARGET_PRODUCT)
-SOONG_CONFIG_arm_gralloc_board_resolution := v$(BOARD_RESOLUTION_RATIO)
+$(call soong_config_set,arm_gralloc,gralloc_use_ion_dma_heap,$(GRALLOC_USE_ION_DMA_HEAP))
+$(call soong_config_set,arm_gralloc,gralloc_use_contiguous_display_memory,$(AML_ALLOC_SCANOUT_FOR_COMPOSE))
+$(call soong_config_set,arm_gralloc,gralloc_hwc_force_bgra_8888,$(GRALLOC_HWC_FORCE_BGRA_8888))
+$(call soong_config_set,arm_gralloc,gralloc_hwc_fb_disable_afbc,$(GRALLOC_HWC_FB_DISABLE_AFBC))
+$(call soong_config_set,arm_gralloc,gralloc_arm_no_external_afbc,$(GRALLOC_ARM_NO_EXTERNAL_AFBC))
+$(call soong_config_set,arm_gralloc,gralloc_target_product,$(TARGET_PRODUCT))
+$(call soong_config_set,arm_gralloc,board_resolution,v$(BOARD_RESOLUTION_RATIO))
 
 # Retrieve the directory of Gralloc module
 LOCAL_MODULE_MAKEFILE := $(lastword $(MAKEFILE_LIST)))
