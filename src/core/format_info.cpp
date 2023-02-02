@@ -496,7 +496,7 @@ const format_ip_support_t formats_ip_support[] = {
 		.dpu_aeu_wr = F_NONE,
 		.vpu_rd = F_LIN,
 		.vpu_wr = F_LIN,
-		.cam_wr = F_NONE,
+		.cam_wr = F_LIN,
 	},
 	{
 		.id = MALI_GRALLOC_FORMAT_INTERNAL_YU12,
