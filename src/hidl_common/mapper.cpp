@@ -594,7 +594,7 @@ Error validateBufferSize(void* buffer,
 
 	/* Some usages need to match and the rest of the usage must be a subset of the buffer's usages */
 	uint64_t must_match_mask = GRALLOC_USAGE_PRIVATE_MASK | GRALLOC_USAGE_PROTECTED;
-	uint64_t descriptor_usage = static_cast<uint64_t>(descriptorInfo.usage);
+	uint64_t descriptor_usage = static_cast<uint64_t>(descriptorInfo.usage) & ~(GRALLOC_USAGE_EXTERNAL_DISP);
 	uint64_t buffer_usage = gralloc_buffer->producer_usage | gralloc_buffer->consumer_usage;
 
 	if ((buffer_usage & descriptor_usage) != descriptor_usage)

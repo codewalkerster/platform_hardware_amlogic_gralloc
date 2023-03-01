@@ -117,7 +117,8 @@ struct private_handle_t : public native_handle
 	/* Never intended to be used from C code */
 	enum
 	{
-		PRIV_FLAGS_USES_ION_COMPOUND_HEAP = 1 << 2,
+		PRIV_FLAGS_USES_ION_COMPOUND_HEAP = 1 << 1,
+		PRIV_FLAGS_USES_ION = 1 << 2,
 		PRIV_FLAGS_USES_ION_DMA_HEAP = 1 << 3,
 //meson graphics changes start
 		/*

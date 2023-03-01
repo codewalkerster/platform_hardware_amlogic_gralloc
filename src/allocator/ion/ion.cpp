@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2022 ARM Limited. All rights reserved.
+ * Copyright (C) 2016-2020 ARM Limited. All rights reserved.
  *
  * Copyright (C) 2008 The Android Open Source Project
  *
@@ -26,9 +26,16 @@
 #include <log/log.h>
 #include <cutils/atomic.h>
 
+#ifdef GRALLOC_AML_EXTEND
+#ifdef BUILD_KERNEL_4_9
 #include <ion/ion.h>
-#include <ion/ion_4.12.h>
-#include <linux/dma-buf.h>
+#include "ion_4.12.h"
+#else
+#include "ion_5.4.h"
+#include "ion_54.h"
+#endif
+#endif
+
 #include <vector>
 #include <sys/ioctl.h>
 
@@ -38,19 +45,60 @@
 #include "private_interface_types.h"
 #include "buffer.h"
 #include "helper_functions.h"
-#include "gralloc/formats.h"
+//#include "include/gralloc/formats.h"
 #include "usages.h"
+#include "allocator/allocator.h"
 #include "core/buffer_descriptor.h"
 #include "core/buffer_allocation.h"
-#include "allocator/allocator.h"
+
+#ifdef GRALLOC_AML_EXTEND
+#include "ion.h"
+#include <map>
+#ifdef BUILD_KERNEL_4_9
+static std::map<int, ion_user_handle_t> imported_user_hnd;
+static std::map<int, int> imported_ion_client;
+#endif
+#endif
+
+//meson graphics changes start
+#ifdef GRALLOC_AML_EXTEND
+#include <am_gralloc_internal.h>
+#include <cutils/properties.h>
+
+enum ion_heap_type am_gralloc_pick_ion_heap(
+	const buffer_descriptor_t *bufDescriptor, uint64_t usage);
+
+void am_gralloc_set_ion_flags(
+					enum ion_heap_type heap_type,
+					uint64_t usage,
+					unsigned int *priv_heap_flag,
+					unsigned int *ion_flags);
+static int am_gralloc_exec_omx_policy(
+					int size,
+					int scalar,
+					const buffer_descriptor_t *descriptor);
+static int am_gralloc_exec_uvm_policy(
+					const buffer_descriptor_t *bufDescriptor,
+					uint64_t usage,
+					struct uvm_exec_data *agu);
+
+#define V4L2_DECODER_BUFFER_MAX_WIDTH       4096
+#define V4L2_DECODER_BUFFER_MAX_HEIGHT      2304
+#define V4L2_DECODER_BUFFER_8k_MAX_WIDTH       8192
+#define V4L2_DECODER_BUFFER_8k_MAX_HEIGHT      4352
+
+#endif
+//meson graphics changes end
+
 
 #define INIT_ZERO(obj) (memset(&(obj), 0, sizeof((obj))))
 
 #define HEAP_MASK_FROM_ID(id) (1 << id)
 #define HEAP_MASK_FROM_TYPE(type) (1 << type)
 
-static const enum ion_heap_type ION_HEAP_TYPE_INVALID = ((enum ion_heap_type)~0);
-static const enum ion_heap_type ION_HEAP_TYPE_SECURE = (enum ion_heap_type)(((unsigned int)ION_HEAP_TYPE_CUSTOM) + 1);
+#define ION_HEAP_TYPE_INVALID  ((enum ion_heap_type)~0)
+#define ION_HEAP_TYPE_SECURE  (enum ion_heap_type)(((unsigned int)ION_HEAP_TYPE_CUSTOM) + 2)
+#define ION_HEAP_TYPE_FB  (enum ion_heap_type)(((unsigned int)ION_HEAP_TYPE_CUSTOM) + 1)
 
 #if defined(ION_HEAP_SECURE_MASK)
 #if (HEAP_MASK_FROM_TYPE(ION_HEAP_TYPE_SECURE) != ION_HEAP_SECURE_MASK)
@@ -97,6 +145,33 @@ struct ion_device
 		return &dev;
 	}
 
+#ifdef GRALLOC_AML_EXTEND
+	static void close_uvm()
+	{
+		ion_device &dev = get_inst();
+		if (dev.uvm_dev >= 0)
+		{
+			::close(dev.uvm_dev);
+			dev.uvm_dev = -1;
+		}
+	}
+
+	static int get_uvm()
+	{
+		ion_device &dev = get_inst();
+		if (dev.uvm_dev < 0)
+		{
+			dev.uvm_dev = open("/dev/uvm", O_RDONLY | O_CLOEXEC);
+		}
+
+		if (dev.uvm_dev < 0)
+		{
+			return -1;
+		}
+		return dev.uvm_dev;
+	}
+#endif
+
 	/*
 	 *  Identifies a heap and retrieves file descriptor from ION for allocation
 	 *
@@ -104,16 +179,26 @@ struct ion_device
 	 * @param size      [in]    Requested buffer size (in bytes).
 	 * @param heap_type [in]    Requested heap type.
 	 * @param flags     [in]    ION allocation attributes defined by ION_FLAG_*.
+	 * @param min_pgsz  [out]   Minimum page size (in bytes).
 	 *
 	 * @return File handle which can be used for allocation, on success
 	 *         -1, otherwise.
 	 */
-	int alloc_from_ion_heap(size_t size, enum ion_heap_type heap_type, unsigned int flags);
+#ifdef GRALLOC_AML_EXTEND
+	int alloc_from_ion_heap(uint64_t usage, size_t size, enum ion_heap_type *ptype, unsigned int flags,
+							int *min_pgsz);
+#else
+	int alloc_from_ion_heap(uint64_t usage, size_t size, enum ion_heap_type heap_type, unsigned int flags,
+							int *min_pgsz);
+#endif
 
 	enum ion_heap_type pick_ion_heap(uint64_t usage);
 
 private:
 	int ion_client;
+#ifdef GRALLOC_AML_EXTEND
+	int uvm_dev;
+#endif
 	bool use_legacy_ion;
 	bool secure_heap_exists;
 	/*
@@ -125,6 +210,9 @@ private:
 
 	ion_device()
 	    : ion_client(-1)
+#ifdef GRALLOC_AML_EXTEND
+	    , uvm_dev(-1)
+#endif
 	    , use_legacy_ion(false)
 	    , secure_heap_exists(false)
 	    , heap_cnt(0)
@@ -179,36 +267,77 @@ static void set_ion_flags(enum ion_heap_type heap_type, uint64_t usage,
 	}
 }
 
-int ion_device::alloc_from_ion_heap(size_t size, enum ion_heap_type heap_type, unsigned int flags)
+int ion_device::alloc_from_ion_heap(uint64_t usage, size_t size,
+#ifdef GRALLOC_AML_EXTEND
+									enum ion_heap_type *ptype,
+#else
+									enum ion_heap_type heap_type,
+#endif
+									unsigned int flags, int *min_pgsz)
 {
 	int shared_fd = -1;
 	int ret = -1;
+//meson graphics changes start
+#ifdef GRALLOC_AML_EXTEND
+   enum ion_heap_type heap_type = *ptype;
+#endif
+//meson graphics changes end
 
 	if (ion_client < 0 ||
 	    size <= 0 ||
-	    heap_type == ION_HEAP_TYPE_INVALID)
+	    heap_type == ION_HEAP_TYPE_INVALID ||
+	    min_pgsz == NULL)
 	{
 		return -1;
 	}
 
+	if (heap_type == ION_HEAP_TYPE_CUSTOM ||
+		heap_type == ION_HEAP_TYPE_DMA ||
+		heap_type == ION_HEAP_TYPE_FB ||
+		heap_type == ION_HEAP_TYPE_SECURE)
+		flags |= ION_FLAG_EXTEND_MESON_HEAP;
+	if (heap_type == ION_HEAP_TYPE_SECURE)
+		flags |= ION_FLAG_EXTEND_MESON_HEAP_SECURE;
+
+#ifdef AML_GRALLOC_DEBUG
+	AML_GRALLOC_LOGI("%s: flags = %u", __func__, flags);
+#endif
+
+	bool system_heap_exist = false;
+
 	if (use_legacy_ion == false)
 	{
 		int i = 0;
+		bool is_heap_matched = false;
 
 		/* Attempt to allocate memory from each matching heap type (of
 		 * enumerated heaps) until successful
 		 */
 		do
 		{
-			if (heap_type == heap_info[i].type)
+			if (((heap_type == heap_info[i].type) &&
+				strcmp(heap_info[i].name, "ion-fb")) ||
+				(heap_type == ION_HEAP_TYPE_FB &&
+				!strcmp(heap_info[i].name, "ion-fb")))
 			{
+				is_heap_matched = true;
 				ret = ion_alloc_fd(ion_client, size, 0,
 				                   HEAP_MASK_FROM_ID(heap_info[i].heap_id),
 				                   flags, &shared_fd);
 			}
 
+			if (heap_info[i].type == ION_HEAP_TYPE_SYSTEM)
+			{
+				system_heap_exist = true;
+			}
+
 			i++;
 		} while ((ret < 0) && (i < heap_cnt));
+
+		if (is_heap_matched == false)
+		{
+			MALI_GRALLOC_LOGE("Failed to find matching ION heap. Trying to fall back on system heap");
+		}
 	}
 	else
 	{
@@ -221,11 +350,117 @@ int ion_device::alloc_from_ion_heap(size_t size, enum ion_heap_type heap_type, u
 		ret = ion_alloc_fd(ion_client, size, 0, heap_mask, flags, &shared_fd);
 	}
 
+	/* Check if allocation from selected heap failed and fall back to system
+	 * heap if possible.
+	 */
 	if (ret < 0)
 	{
-		MALI_GRALLOC_LOGE("%s: Allocation failed.", __func__);
-		return -1;
+		/* Don't allow falling back to system heap if secure was requested. */
+		if (heap_type == ION_HEAP_TYPE_SECURE)
+		{
+			MALI_GRALLOC_LOGE("ION_HEAP_TYPE_SECURE Allocation failed on on dma heap.");
+			return -1;
+		}
+		/* hw fb canot fallback to system heap.*/
+		if (usage & GRALLOC_USAGE_HW_FB) {
+			MALI_GRALLOC_LOGE("GRALLOC_USAGE_HW_FB Allocation failed on on dma heap. Cannot fallback.");
+			return -1;
+		}
+
+		/* Can't fall back to system heap if system heap was the heap that
+		 * already failed
+		 */
+		if (heap_type == ION_HEAP_TYPE_SYSTEM)
+		{
+			MALI_GRALLOC_LOGE("%s: Allocation failed on on system heap. Cannot fallback.", __func__);
+			return -1;
+		}
+
+		heap_type = ION_HEAP_TYPE_SYSTEM;
+
+		/* Set ION flags for system heap allocation */
+//meson graphics changes start
+#ifdef GRALLOC_AML_EXTEND
+		am_gralloc_set_ion_flags(heap_type, usage, NULL, &flags);
+#else
+		set_ion_flags(heap_type, usage, NULL, &flags);
+#endif
+//meson graphics changes end
+
+		if (use_legacy_ion == false)
+		{
+			int i = 0;
+
+			if (system_heap_exist == false)
+			{
+				MALI_GRALLOC_LOGE("%s: System heap not available for fallback", __func__);
+				return -1;
+			}
+
+			/* Attempt to allocate memory from each system heap type (of
+			 * enumerated heaps) until successful
+			 */
+			do
+			{
+				if (heap_info[i].type == ION_HEAP_TYPE_SYSTEM)
+				{
+					ret = ion_alloc_fd(ion_client, size, 0,
+					                   HEAP_MASK_FROM_ID(heap_info[i].heap_id),
+					                   flags, &shared_fd);
+				}
+
+				i++;
+			} while ((ret < 0) && (i < heap_cnt));
+		}
+		else /* Use legacy ION API */
+		{
+			ret = ion_alloc_fd(ion_client, size, 0,
+			                   HEAP_MASK_FROM_TYPE(heap_type),
+			                   flags, &shared_fd);
+		}
+
+		if (ret != 0)
+		{
+			MALI_GRALLOC_LOGE("Fallback ion_alloc_fd(%d, %zd, %d, %u, %p) failed",
+			      ion_client, size, 0, flags, &shared_fd);
+			return -1;
+		}
 	}
+
+	switch (heap_type)
+	{
+	case ION_HEAP_TYPE_SYSTEM:
+		*min_pgsz = SZ_4K;
+		break;
+
+	case ION_HEAP_TYPE_SYSTEM_CONTIG:
+	case ION_HEAP_TYPE_CARVEOUT:
+#if defined(GRALLOC_USE_ION_DMA_HEAP) && GRALLOC_USE_ION_DMA_HEAP
+	case ION_HEAP_TYPE_DMA:
+		*min_pgsz = size;
+		break;
+#endif
+#if defined(GRALLOC_USE_ION_COMPOUND_PAGE_HEAP) && GRALLOC_USE_ION_COMPOUND_PAGE_HEAP
+	case ION_HEAP_TYPE_COMPOUND_PAGE:
+		*min_pgsz = SZ_2M;
+		break;
+#endif
+	/* If have customized heap please set the suitable pg type according to
+	 * the customized ION implementation
+	 */
+	case ION_HEAP_TYPE_CUSTOM:
+		*min_pgsz = SZ_4K;
+		break;
+	default:
+		*min_pgsz = SZ_4K;
+		break;
+	}
+
+//meson graphics changes start
+#ifdef GRALLOC_AML_EXTEND
+*ptype = heap_type;
+#endif
+//meson graphics changes end
 
 	return shared_fd;
 }
@@ -247,8 +482,9 @@ enum ion_heap_type ion_device::pick_ion_heap(uint64_t usage)
 	}
 	else if (!(usage & GRALLOC_USAGE_HW_VIDEO_ENCODER) && (usage & GRALLOC_USAGE_HW_FB))
 	{
-#if defined(GRALLOC_USE_ION_DMA_HEAP) && GRALLOC_USE_ION_DMA_HEAP && \
-    defined(GRALLOC_USE_CONTIGUOUS_DISPLAY_MEMORY) && GRALLOC_USE_CONTIGUOUS_DISPLAY_MEMORY
+#if defined(GRALLOC_USE_ION_COMPOUND_PAGE_HEAP) && GRALLOC_USE_ION_COMPOUND_PAGE_HEAP
+		heap_type = ION_HEAP_TYPE_COMPOUND_PAGE;
+#elif defined(GRALLOC_USE_ION_DMA_HEAP) && GRALLOC_USE_ION_DMA_HEAP
 		heap_type = ION_HEAP_TYPE_DMA;
 #else
 		heap_type = ION_HEAP_TYPE_SYSTEM;
@@ -265,7 +501,6 @@ enum ion_heap_type ion_device::pick_ion_heap(uint64_t usage)
 int ion_device::open_and_query_ion()
 {
 	int ret = -1;
-
 	if (ion_client >= 0)
 	{
 		MALI_GRALLOC_LOGW("ION device already open");
@@ -281,7 +516,18 @@ int ion_device::open_and_query_ion()
 
 	INIT_ZERO(heap_info);
 	heap_cnt = 0;
+
+#ifdef GRALLOC_AML_EXTEND
+
+#ifdef BUILD_KERNEL_4_9
+	use_legacy_ion = true;
+#else
+	use_legacy_ion = false;
+#endif
+
+#else
 	use_legacy_ion = (ion_is_legacy(ion_client) != 0);
+#endif
 
 	if (use_legacy_ion == false)
 	{
@@ -310,7 +556,7 @@ int ion_device::open_and_query_ion()
 						return -1;
 					}
 
-					if (strcmp(heap->name, "ion_protected_heap") == 0)
+					if (strcmp(heap->name, "secure_ion") == 0)
 					{
 						heap->type = ION_HEAP_TYPE_SECURE;
 						secure_heap_exists = true;
@@ -331,7 +577,6 @@ int ion_device::open_and_query_ion()
 	}
 	else
 	{
-		MALI_GRALLOC_LOGI("Using new ION API. Legacy ION ioctl is expected to fail.");
 #if defined(ION_HEAP_SECURE_MASK)
 		secure_heap_exists = true;
 #endif
@@ -340,182 +585,663 @@ int ion_device::open_and_query_ion()
 	return 0;
 }
 
-static int call_dma_buf_sync_ioctl(int fd, uint64_t operation, bool read, bool write)
+/*
+ * Signal start of CPU access to the DMABUF exported from ION.
+ *
+ * @param hnd   [in]    Buffer handle
+ * @param read  [in]    Flag indicating CPU read access to memory
+ * @param write [in]    Flag indicating CPU write access to memory
+ *
+ * @return              0 in case of success
+ *                      errno for all error cases
+ */
+int allocator_sync_start(const private_handle_t * const hnd,
+						 const bool read, const bool write)
 {
+	if (hnd == NULL)
+	{
+		return -EINVAL;
+	}
+
 	ion_device *dev = ion_device::get();
-	if (dev == nullptr)
+	if (!dev)
 	{
 		return -ENODEV;
 	}
 
-	if (dev->use_legacy())
+	GRALLOC_UNUSED(read);
+	GRALLOC_UNUSED(write);
+
+	switch (hnd->flags & private_handle_t::PRIV_FLAGS_USES_ION)
 	{
-		ion_sync_fd(dev->client(), fd);
-	}
-	else
-	{
-		/* Either DMA_BUF_SYNC_START or DMA_BUF_SYNC_END. */
-		dma_buf_sync sync_args = { operation };
-
-		if (read)
+	case private_handle_t::PRIV_FLAGS_USES_ION:
+		if (!(hnd->flags & private_handle_t::PRIV_FLAGS_USES_ION_DMA_HEAP))
 		{
-			sync_args.flags |= DMA_BUF_SYNC_READ;
+			if (dev->use_legacy() == false)
+			{
+#if defined(GRALLOC_USE_ION_DMABUF_SYNC) && (GRALLOC_USE_ION_DMABUF_SYNC == 1)
+				uint64_t flags = DMA_BUF_SYNC_START;
+				if (read)
+				{
+					flags |= DMA_BUF_SYNC_READ;
+				}
+				if (write)
+				{
+					flags |= DMA_BUF_SYNC_WRITE;
+				}
+
+				const struct dma_buf_sync payload = { flags };
+
+				int ret, retry = 5;
+				do
+				{
+					ret = ioctl(hnd->share_fd, DMA_BUF_IOCTL_SYNC, &payload);
+					retry--;
+				} while ((ret == -EAGAIN || ret == -EINTR) && retry);
+
+				if (ret < 0)
+				{
+					MALI_GRALLOC_LOGE("ioctl: 0x%" PRIx64 ", flags: 0x%" PRIx64 "failed with code %d: %s",
+					     (uint64_t)DMA_BUF_IOCTL_SYNC, flags, ret, strerror(errno));
+					return -errno;
+				}
+#endif
+			}
+			else
+			{
+				ion_sync_fd(dev->client(), hnd->share_fd);
+			}
 		}
 
-		if (write)
-		{
-			sync_args.flags |= DMA_BUF_SYNC_WRITE;
-		}
-
-		int ret, retry = 5;
-		do
-		{
-			ret = ioctl(fd, DMA_BUF_IOCTL_SYNC, &sync_args);
-			retry--;
-		} while ((ret == -EAGAIN || ret == -EINTR) && retry);
-
-		if (ret < 0)
-		{
-			MALI_GRALLOC_LOGE("ioctl: %#" PRIx64 ", flags: %#" PRIx64 "failed with code %d: %s",
-			     (uint64_t)DMA_BUF_IOCTL_SYNC, (uint64_t)sync_args.flags, ret, strerror(errno));
-			return -errno;
-		}
+		break;
 	}
 
 	return 0;
 }
 
-int allocator_sync_start(const private_handle_t *handle, bool read, bool write)
+/*
+ * Signal end of CPU access to the DMABUF exported from ION.
+ *
+ * @param hnd   [in]    Buffer handle
+ * @param read  [in]    Flag indicating CPU read access to memory
+ * @param write [in]    Flag indicating CPU write access to memory
+ *
+ * @return              0 in case of success
+ *                      errno for all error cases
+ */
+int allocator_sync_end(const private_handle_t * const hnd,
+					   const bool read,
+					   const bool write)
 {
-	if (handle == nullptr)
+	if (hnd == NULL)
 	{
 		return -EINVAL;
 	}
-
-	return call_dma_buf_sync_ioctl(handle->share_fd, DMA_BUF_SYNC_START, read, write);
-}
-
-int allocator_sync_end(const private_handle_t *handle, bool read, bool write)
-{
-	if (handle == nullptr)
-	{
-		return -EINVAL;
-	}
-
-	return call_dma_buf_sync_ioctl(handle->share_fd, DMA_BUF_SYNC_END, read, write);
-}
-
-void allocator_free(private_handle_t *handle)
-{
-	if (handle == nullptr)
-	{
-		return;
-	}
-
-	/* Buffer might be unregistered already so we need to assure we have a valid handle */
-	if (handle->base != 0)
-	{
-		if (munmap(handle->base, handle->size) != 0)
-		{
-			MALI_GRALLOC_LOGE("Failed to munmap handle %p", handle);
-		}
-	}
-
-	close(handle->share_fd);
-	handle->share_fd = -1;
-}
-
-int allocator_allocate(const buffer_descriptor_t *descriptor, private_handle_t **out_handle)
-{
-	int ret = 0;
 
 	ion_device *dev = ion_device::get();
 	if (!dev)
 	{
-		MALI_GRALLOC_LOGE("Failed to obtain ion device");
 		return -ENODEV;
 	}
 
-	uint64_t usage = descriptor->consumer_usage | descriptor->producer_usage;
-	enum ion_heap_type heap_type = dev->pick_ion_heap(usage);
+	GRALLOC_UNUSED(read);
+	GRALLOC_UNUSED(write);
+
+	switch (hnd->flags & private_handle_t::PRIV_FLAGS_USES_ION)
+	{
+	case private_handle_t::PRIV_FLAGS_USES_ION:
+		if (!(hnd->flags & private_handle_t::PRIV_FLAGS_USES_ION_DMA_HEAP))
+		{
+			if (dev->use_legacy() == false)
+			{
+#if defined(GRALLOC_USE_ION_DMABUF_SYNC) && (GRALLOC_USE_ION_DMABUF_SYNC == 1)
+				uint64_t flags = DMA_BUF_SYNC_END;
+				if (read)
+				{
+					flags |= DMA_BUF_SYNC_READ;
+				}
+				if (write)
+				{
+					flags |= DMA_BUF_SYNC_WRITE;
+				}
+
+				const struct dma_buf_sync payload = { flags };
+
+				int ret, retry = 5;
+				do
+				{
+					ret = ioctl(hnd->share_fd, DMA_BUF_IOCTL_SYNC, &payload);
+					retry--;
+				} while ((ret == -EAGAIN || ret == -EINTR) && retry);
+
+				if (ret < 0)
+				{
+					MALI_GRALLOC_LOGE("ioctl: 0x%" PRIx64 ", flags: 0x%" PRIx64 "failed with code %d: %s",
+					     (uint64_t)DMA_BUF_IOCTL_SYNC, flags, ret, strerror(errno));
+					return -errno;
+				}
+#endif
+			}
+			else
+			{
+				ion_sync_fd(dev->client(), hnd->share_fd);
+			}
+		}
+		break;
+	}
+
+	return 0;
+}
+
+
+void allocator_free(private_handle_t * const hnd)
+{
+	if (hnd->flags & private_handle_t::PRIV_FLAGS_USES_ION)
+	{
+		/* Buffer might be unregistered already so we need to assure we have a valid handle */
+		if (hnd->base != 0)
+		{
+			if (munmap((void *)hnd->base, hnd->size) != 0)
+			{
+				MALI_GRALLOC_LOGE("Failed to munmap handle %p", hnd);
+			}
+		}
+
+		close(hnd->share_fd);
+		hnd->share_fd = -1;
+	}
+}
+
+/*
+ *  Allocates ION buffers
+ *
+ * @param descriptors     [in]    Buffer request descriptors
+ * @param numDescriptors  [in]    Number of descriptors
+ * @param pHandle         [out]   Handle for each allocated buffer
+ * @param shared_backend  [out]   Shared buffers flag
+ *
+ * @return File handle which can be used for allocation, on success
+ *         -1, otherwise.
+ */
+int allocator_allocate(const buffer_descriptor_t *descriptor, private_handle_t **out_handle)
+{
+	unsigned int priv_heap_flag = 0;
+	enum ion_heap_type heap_type;
+	unsigned char *cpu_ptr = NULL;
+	uint64_t usage;
+	uint32_t i, max_buffer_index = 0;
+	int shared_fd;
+	unsigned int ion_flags = 0;
+	int min_pgsz = 0;
+#ifdef GRALLOC_AML_EXTEND
+	struct uvm_exec_data *agu = (struct uvm_exec_data *)malloc(sizeof(uvm_exec_data));
+#endif
+
+	ion_device *dev = ion_device::get();
+	if (!dev)
+	{
+#ifdef GRALLOC_AML_EXTEND
+		MALI_GRALLOC_LOGE("Failed to get ion_device!");
+		free(agu);
+#endif
+		return -1;
+	}
+
+	usage = descriptor->consumer_usage | descriptor->producer_usage;
+
+//meson graphics changes start
+#ifdef GRALLOC_AML_EXTEND
+	heap_type = am_gralloc_pick_ion_heap(descriptor, usage);
+	MALI_GRALLOC_LOGV("alloc from heap:%d", heap_type);
+#else
+	heap_type = dev->pick_ion_heap(usage);
+#endif
+//meson graphics changes end
+
 	if (heap_type == ION_HEAP_TYPE_INVALID)
 	{
-		MALI_GRALLOC_LOGE("Failed to find an appropriate ion heap");
-		return -ENOMEM;
+		return false;
 	}
 
-	unsigned int priv_heap_flag = 0;
-	unsigned int ion_flags = 0;
+//meson graphics changes start
+#ifdef GRALLOC_AML_EXTEND
+	am_gralloc_set_ion_flags(heap_type, usage, NULL, &ion_flags);
+	shared_fd = am_gralloc_exec_uvm_policy(descriptor, usage, agu);
+#ifdef AML_GRALLOC_DEBUG
+	AML_GRALLOC_LOGI("shared_fd: ( %d ) agu->delay_alloc:%d agu->uvm_flag:%d",
+					shared_fd, agu->delay_alloc, agu->uvm_flag);
+#endif
+
+	if (shared_fd < 0) {
+		if (agu->uvm_buffer_flag) {
+			MALI_GRALLOC_LOGE("Failed to allocate from codec_mm!");
+			free(agu);
+			return -1;
+		}
+		shared_fd = dev->alloc_from_ion_heap(usage, descriptor->size, &heap_type, ion_flags, &min_pgsz);
+		agu->delay_alloc = 0;
+	}
+	/*update private heap flag*/
+	am_gralloc_set_ion_flags(heap_type, usage, &priv_heap_flag, NULL);
+#else
 	set_ion_flags(heap_type, usage, &priv_heap_flag, &ion_flags);
 
-	android::base::unique_fd shared_fd{
-		dev->alloc_from_ion_heap(descriptor->size, heap_type, ion_flags)};
+	shared_fd = dev->alloc_from_ion_heap(usage, descriptor->size, heap_type, ion_flags, &min_pgsz);
+#endif
+//meson graphics changes end
+
 	if (shared_fd < 0)
 	{
-		MALI_GRALLOC_LOGE("ion_alloc failed from client with pid %d", dev->client());
-		return -ENOMEM;
+		MALI_GRALLOC_LOGE("ion_alloc failed form client: ( %d )", dev->client());
+		free(agu);
+		return -1;
 	}
 
+	android::base::unique_fd fd(shared_fd);
 	private_handle_t *handle = make_private_handle(
-	    priv_heap_flag, descriptor->size, descriptor->consumer_usage,
-	    descriptor->producer_usage, std::move(shared_fd), descriptor->hal_format, descriptor->alloc_format,
-	    descriptor->width, descriptor->height, descriptor->size, descriptor->layer_count,
-	    descriptor->plane_info, descriptor->pixel_stride);
-	if (nullptr == handle)
+		private_handle_t::PRIV_FLAGS_USES_ION | priv_heap_flag | agu->uvm_buffer_flag, descriptor->size,
+		descriptor->consumer_usage, descriptor->producer_usage, std::move(fd), descriptor->hal_format, descriptor->alloc_format,
+		descriptor->width, descriptor->height, descriptor->size, descriptor->layer_count,
+		descriptor->plane_info, descriptor->pixel_stride);
+#ifdef AML_GRALLOC_DEBUG
+	AML_GRALLOC_LOGI("%s: width:%d height:%d stride:%d format=0x%" PRIx64 " usage=0x%" PRIx64,
+		    __FUNCTION__, descriptor->width, descriptor->height, descriptor->pixel_stride,
+		    descriptor->hal_format, usage);
+#endif
+	if (NULL == handle)
 	{
-		MALI_GRALLOC_LOGE("Private handle could not be created for descriptor");
-		return -ENOMEM;
+		MALI_GRALLOC_LOGE("[%s] Private handle create failed! w*h(%d*%d) stride:%d format=0x%" PRIx64 " usage=0x%" PRIx64,
+			__FUNCTION__, descriptor->width, descriptor->height, descriptor->pixel_stride, descriptor->hal_format, usage);
+
+		/* Close the obtained shared file descriptor for the current handle */
+		close(shared_fd);
+
+		allocator_free(handle);
+		free(agu);
+		return -1;
 	}
 
+	handle->req_width = descriptor->width;
+	handle->req_height = descriptor->height;
+	handle->format = descriptor->hal_format;
+	handle->usage = usage;
+
+#ifdef GRALLOC_AML_EXTEND
+	handle->ion_delay_alloc = agu->delay_alloc;
+	handle->am_extend_fd = ::dup(handle->share_fd);
+	handle->am_extend_type = 0;
+	free(agu);
+#endif
 	*out_handle = handle;
+
 	return 0;
 }
 
 int allocator_map(private_handle_t *handle)
 {
-	if (handle == nullptr)
+	int retval = -EINVAL;
+
+	switch (handle->flags & private_handle_t::PRIV_FLAGS_USES_ION)
 	{
-		return -EINVAL;
+	case private_handle_t::PRIV_FLAGS_USES_ION:
+		size_t size = handle->size;
+
+#ifdef GRALLOC_AML_EXTEND
+		if (handle->ion_delay_alloc)
+			return 0;
+
+#ifdef BUILD_KERNEL_4_9
+		ion_device *dev = ion_device::get();
+		if (!dev) {
+			return -1;
+		}
+		ion_user_handle_t user_hnd;
+		ion_import(dev->client(), handle->share_fd, &user_hnd);
+#endif
+		uint64_t usage = handle->producer_usage | handle->consumer_usage;
+		if (am_gralloc_is_video_decoder_quarter_buffer_usage(usage) ||
+			am_gralloc_is_video_decoder_one_sixteenth_buffer_usage(usage)) {
+			return 0;
+		}
+#endif
+		unsigned char *mappedAddress = (unsigned char *)mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_SHARED, handle->share_fd, 0);
+#ifdef GRALLOC_AML_EXTEND
+#ifdef BUILD_KERNEL_4_9
+		imported_ion_client.emplace(handle->share_fd, dev->client());
+		imported_user_hnd.emplace(handle->share_fd, user_hnd);
+#endif
+#endif
+
+		if (MAP_FAILED == mappedAddress)
+		{
+			MALI_GRALLOC_LOGE("mmap( share_fd:%d ) failed with %s", handle->share_fd, strerror(errno));
+			retval = -errno;
+			break;
+		}
+
+		handle->base = (void *)(uintptr_t(mappedAddress));
+		retval = 0;
+		break;
 	}
 
-	void *hint = nullptr;
-	int protection = PROT_READ | PROT_WRITE;
-	int flags = MAP_SHARED;
-	off_t page_offset = 0;
-	void *mapping = mmap(hint, handle->size, protection, flags, handle->share_fd, page_offset);
-	if (MAP_FAILED == mapping)
-	{
-		MALI_GRALLOC_LOGE("mmap(share_fd = %d) failed: %s", handle->share_fd, strerror(errno));
-		return -errno;
-	}
-
-	handle->base = static_cast<std::byte *>(mapping);
-
-	return 0;
+	return retval;
 }
 
 void allocator_unmap(private_handle_t *handle)
 {
-	if (handle == nullptr)
+	switch (handle->flags & private_handle_t::PRIV_FLAGS_USES_ION)
 	{
-		return;
-	}
+	case private_handle_t::PRIV_FLAGS_USES_ION:
+		void *base = (void *)(uintptr_t(handle->base));
+		size_t size = handle->size;
 
-	void *base = static_cast<std::byte *>(handle->base);
-	if (munmap(base, handle->size) < 0)
-	{
-		MALI_GRALLOC_LOGE("Could not munmap base:%p size:%d '%s'", base, handle->size, strerror(errno));
-	}
-	else
-	{
-		handle->base = 0;
-		handle->lock_count = 0;
-		handle->cpu_write = 0;
+#ifdef GRALLOC_AML_EXTEND
+		uint64_t usage = handle->producer_usage | handle->consumer_usage;
+		if (am_gralloc_is_video_decoder_quarter_buffer_usage(usage) ||
+			am_gralloc_is_video_decoder_one_sixteenth_buffer_usage(usage)) {
+			break;
+		}
+		if (!handle->ion_delay_alloc && munmap(base, size) < 0)
+#else
+		if (munmap(base, size) < 0)
+#endif
+		{
+			MALI_GRALLOC_LOGE("Could not munmap base:%p size:%zd '%s'", base, size, strerror(errno));
+		}
+		else
+		{
+			handle->base = nullptr;
+			handle->cpu_write = false;
+			handle->lock_count = 0;
+		}
+#ifdef GRALLOC_AML_EXTEND
+#ifdef BUILD_KERNEL_4_9
+		auto user_hnd_iter = imported_user_hnd.find(handle->share_fd);
+		auto ion_client_iter = imported_ion_client.find(handle->share_fd);
+		if (user_hnd_iter != imported_user_hnd.end()
+				&& ion_client_iter != imported_ion_client.end()) {
+			ion_free(ion_client_iter->second, user_hnd_iter->second);
+			imported_user_hnd.erase(user_hnd_iter);
+			imported_ion_client.erase(ion_client_iter);
+		}
+#endif
+#endif
+		break;
 	}
 }
 
 void allocator_close(void)
 {
 	ion_device::close();
+#ifdef GRALLOC_AML_EXTEND
+	ion_device::close_uvm();
+#endif
 }
+
+#ifdef GRALLOC_AML_EXTEND
+/*for ion alloc*/
+bool is_android_yuv_format(int req_format)
+{
+	bool rval = false;
+
+	switch (req_format)
+	{
+	case HAL_PIXEL_FORMAT_YV12:
+	case HAL_PIXEL_FORMAT_Y8:
+	case HAL_PIXEL_FORMAT_Y16:
+	case HAL_PIXEL_FORMAT_YCbCr_420_888:
+	case HAL_PIXEL_FORMAT_YCbCr_422_888:
+	case HAL_PIXEL_FORMAT_YCbCr_444_888:
+	case HAL_PIXEL_FORMAT_YCrCb_420_SP:
+	case HAL_PIXEL_FORMAT_YCbCr_422_SP:
+	case HAL_PIXEL_FORMAT_YCBCR_422_I:
+	case HAL_PIXEL_FORMAT_RAW16:
+	case HAL_PIXEL_FORMAT_RAW12:
+	case HAL_PIXEL_FORMAT_RAW10:
+	case HAL_PIXEL_FORMAT_RAW_OPAQUE:
+	case HAL_PIXEL_FORMAT_BLOB:
+	case HAL_PIXEL_FORMAT_IMPLEMENTATION_DEFINED:
+		rval = true;
+		break;
+	}
+
+	return rval;
+}
+
+static int am_gralloc_exec_omx_policy(
+					int size,
+					int scalar,
+					const buffer_descriptor_t *descriptor) {
+	char prop[PROPERTY_VALUE_MAX];
+
+	/*
+	 * support for 8k video
+	 * Set max 8k size if bigger then 4k
+	 */
+	if ((descriptor->width * descriptor->height) >
+			(V4L2_DECODER_BUFFER_MAX_WIDTH * V4L2_DECODER_BUFFER_MAX_HEIGHT))
+		size = V4L2_DECODER_BUFFER_8k_MAX_WIDTH * V4L2_DECODER_BUFFER_8k_MAX_HEIGHT * 3 / 2;
+
+	size /= scalar * scalar;
+
+	/*
+	 * workaround for unsupported 4k video play on some platforms
+	 */
+	if (property_get("ro.vendor.platform.support.4k", prop, NULL) > 0) {
+		if (strstr(prop, "false"))
+			size = (GRALLOC_ALIGN(1920/scalar, 64) * GRALLOC_ALIGN(1080/scalar, 64)) * 3 / 2;
+	}
+	/*
+	 * workaround to alloc fixed 1080p buffer for 1/16 usage
+	 * if vendor.media.omx2.1080p_buffer is true
+	 */
+	if (scalar == 4 &&
+		property_get("vendor.media.omx2.1080p_buffer", prop, NULL) > 0) {
+		if (strstr(prop, "true")) {
+			size = (GRALLOC_ALIGN(1920, 64) * GRALLOC_ALIGN(1080, 64)) * 3 / 2;
+			MALI_GRALLOC_LOGW("[gralloc]: allocate fixed 1080p buffer for 1/16 usage size:%d", size);
+		}
+	}
+	return size;
+}
+
+static int am_gralloc_exec_uvm_policy(
+					const buffer_descriptor_t *bufDescriptor,
+					uint64_t usage,
+					struct uvm_exec_data *agu) {
+	int uvm_fd = -1;
+	int ret = -1;
+	int buf_scalar = 1;
+	int aligned_bit = 1;
+	int v4l2_dec_max_buf_size =
+		(V4L2_DECODER_BUFFER_MAX_WIDTH * V4L2_DECODER_BUFFER_MAX_HEIGHT) * 3 / 2;
+
+	uvm_fd = ion_device::get_uvm();
+	if (uvm_fd < 0) {
+		MALI_GRALLOC_LOGE("%s, get_uvm failed uvm_fd=%d",
+				__func__, uvm_fd);
+		return ret;
+	}
+
+	agu->delay_alloc = 0;
+	agu->uvm_flag = UVM_IMM_ALLOC;
+	agu->uvm_buffer_flag = 0;
+
+	if (am_gralloc_is_omx_metadata_extend_usage(usage) ||
+		am_gralloc_is_omx_osd_extend_usage(usage)) {
+
+		agu->uvm_buffer_flag |= private_handle_t::PRIV_FLAGS_UVM_BUFFER;
+
+		if (am_gralloc_is_omx_osd_extend_usage(usage) ||
+			am_gralloc_is_video_decoder_full_buffer_usage(usage) ||
+			am_gralloc_is_video_decoder_OSD_buffer_usage(usage)) {
+			buf_scalar = 1;
+		} else if (am_gralloc_is_video_decoder_quarter_buffer_usage(usage)) {
+			buf_scalar = 2;
+		} else if (am_gralloc_is_video_decoder_one_sixteenth_buffer_usage(usage)) {
+			buf_scalar = 4;
+		} else {
+			agu->uvm_flag = UVM_DELAY_ALLOC;
+			agu->delay_alloc = 1;
+		}
+
+		if (usage & GRALLOC_USAGE_PROTECTED)
+			agu->uvm_flag |= UVM_USAGE_PROTECTED;
+
+		if (am_gralloc_is_video_decoder_OSD_buffer_usage(usage))
+			agu->uvm_flag |= UVM_SKIP_REALLOC;
+
+		if (need_do_width_height_align(usage, bufDescriptor->width, bufDescriptor->height))
+			aligned_bit = 64;
+
+		v4l2_dec_max_buf_size = am_gralloc_exec_omx_policy(
+									v4l2_dec_max_buf_size,
+									buf_scalar,
+									bufDescriptor);
+
+		struct uvm_alloc_data uad = {
+			.size = (int)bufDescriptor->size,
+			.byte_stride = bufDescriptor->pixel_stride,
+			.width = bufDescriptor->width,
+			.height = bufDescriptor->height,
+			.align = aligned_bit,
+			.flags = agu->uvm_flag,
+			.scalar = buf_scalar,
+			.scaled_buf_size = v4l2_dec_max_buf_size
+		};
+		ret = ioctl(uvm_fd, UVM_IOC_ALLOC, &uad);
+		if (ret < 0) {
+			MALI_GRALLOC_LOGE("%s, ioctl::UVM_IOC_ALLOC failed uvm_fd=%d",
+				__func__, uvm_fd);
+			return ret;
+		}
+
+		return uad.fd;
+	}
+	return ret;
+}
+
+enum ion_heap_type am_gralloc_pick_ion_heap(
+	const buffer_descriptor_t *bufDescriptor, uint64_t usage)
+{
+	enum ion_heap_type ret = ION_HEAP_TYPE_SYSTEM;
+
+	if (usage & GRALLOC_USAGE_HW_FB)
+	{
+		ret = ION_HEAP_TYPE_FB;
+		goto out;
+	}
+
+	if (am_gralloc_is_omx_osd_extend_usage(usage) ||
+		(usage & GRALLOC_USAGE_HW_CAMERA_WRITE) ||
+		(usage & GRALLOC_USAGE_HW_VIDEO_ENCODER))
+	{
+		ret = ION_HEAP_TYPE_CUSTOM;
+		goto out;
+	}
+
+	if (am_gralloc_is_omx_metadata_extend_usage(usage))
+	{
+		ret = ION_HEAP_TYPE_SYSTEM;
+		goto out;
+	}
+
+	if (am_gralloc_is_secure_extend_usage(usage))
+	{
+		ret = ION_HEAP_TYPE_SECURE;
+		goto out;
+	}
+
+#ifdef AML_ALLOC_SCANOUT_FOR_COMPOSE
+	static unsigned int max_composer_buf_width = 0;
+	static unsigned int max_composer_buf_height = 0;
+
+	switch (BOARD_RESOLUTION_RATIO) {
+		case 720:
+			max_composer_buf_width = 1280;
+			max_composer_buf_height = 720;
+			break;
+		case 2160:
+			max_composer_buf_width = 3840;
+			max_composer_buf_height = 2160;
+			break;
+		case 1080:
+		default:
+			max_composer_buf_width = 1920;
+			max_composer_buf_height = 1080;
+			break;
+	}
+
+	if (usage & GRALLOC_USAGE_HW_COMPOSER)
+	{
+		if ((bufDescriptor->width <= max_composer_buf_width) &&
+			(bufDescriptor->height <= max_composer_buf_height) &&
+			(!is_android_yuv_format(bufDescriptor->hal_format)))
+		{
+			ret = ION_HEAP_TYPE_DMA;
+			goto out;
+		}
+	}
+#else
+	/*for compile warning.*/
+	bufDescriptor;
+#endif
+
+out:
+	return ret;
+}
+
+void am_gralloc_set_ion_flags(ion_heap_type heap_type, uint64_t usage,
+	unsigned int *priv_heap_flag, unsigned int *ion_flags)
+{
+	if (priv_heap_flag)
+	{
+		int coherent_buffer_flag = am_gralloc_get_coherent_extend_flag();
+
+		if (heap_type == ION_HEAP_TYPE_SYSTEM)
+		{
+			*priv_heap_flag &= ~coherent_buffer_flag;
+		}
+		else if (heap_type == ION_HEAP_TYPE_DMA)
+		{
+			*priv_heap_flag |= coherent_buffer_flag;
+		}
+		else if (heap_type == ION_HEAP_TYPE_CUSTOM)
+		{
+			*priv_heap_flag |= coherent_buffer_flag;
+		}
+		else if (heap_type == ION_HEAP_TYPE_FB)
+		{
+			*priv_heap_flag |= coherent_buffer_flag;
+		}
+
+		/*Must check omx metadata first,
+		*for it have some same bits with video overlay.
+		*/
+		if (am_gralloc_is_omx_metadata_extend_usage(usage))
+		{
+			*priv_heap_flag |= am_gralloc_get_omx_metadata_extend_flag();
+		}
+
+		if (am_gralloc_is_secure_extend_usage(usage))
+		{
+			*priv_heap_flag |= am_gralloc_get_secure_extend_flag();
+		}
+	}
+
+	if (ion_flags)
+	{
+		if ((heap_type != ION_HEAP_TYPE_DMA) &&
+			(heap_type != ION_HEAP_TYPE_CUSTOM) &&
+			(heap_type != ION_HEAP_TYPE_SECURE))
+		{
+			if ((usage & (GRALLOC_USAGE_SW_WRITE_MASK | GRALLOC_USAGE_SW_READ_MASK))
+				|| (usage == GRALLOC_USAGE_HW_TEXTURE))
+			{
+				*ion_flags = ION_FLAG_CACHED | ION_FLAG_CACHED_NEEDS_SYNC;
+			}
+		}
+	}
+}
+#endif
 

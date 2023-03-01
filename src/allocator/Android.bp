@@ -25,6 +25,7 @@ soong_config_module_type {
 	variables: [
 		"gralloc_use_ion_dma_heap",
 		"gralloc_use_contiguous_display_memory",
+		"build_kernel_4_9",
 	],
 	properties: [
 		"cflags",
@@ -36,6 +37,10 @@ soong_config_bool_variable {
 }
 soong_config_bool_variable {
 	name: "gralloc_use_contiguous_display_memory",
+}
+
+soong_config_bool_variable {
+	name: "build_kernel_4_9",
 }
 
 arm_gralloc_allocator_cc_defaults {
@@ -52,6 +57,11 @@ arm_gralloc_allocator_cc_defaults {
 		gralloc_use_contiguous_display_memory: {
 			cflags: [
 				"-DGRALLOC_USE_CONTIGUOUS_DISPLAY_MEMORY=1",
+			],
+		},
+		build_kernel_4_9: {
+			cflags: [
+				"-DBUILD_KERNEL_4_9=1",
 			],
 		},
 	},

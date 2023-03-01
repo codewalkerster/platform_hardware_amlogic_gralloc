@@ -23,7 +23,10 @@
 # The default is to pick system heap.
 # When enabled, uses DMA heap for when the usage has GRALLOC_USAGE_HW_FB or
 # GRALLOC_USAGE_HW_COMPOSER set and GRALLOC_USAGE_HW_VIDEO_ENCODER is not set.
-GRALLOC_USE_ION_DMA_HEAP?=0
+GRALLOC_USE_ION_DMA_HEAP?=1
+ifeq ($(TARGET_APP_LAYER_USE_CONTINUOUS_BUFFER),true)
+AML_ALLOC_SCANOUT_FOR_COMPOSE :=1
+endif
 # When enabled, allocations for display buffers will use physically contiguous memory.
 GRALLOC_USE_CONTIGUOUS_DISPLAY_MEMORY?=0
 
@@ -70,3 +73,19 @@ GRALLOC_TOP_DIR := $(strip $(patsubst %/,%,$(dir $(LOCAL_MODULE_MAKEFILE))))
 # Add the system properties for Gralloc
 TARGET_VENDOR_PROP += $(GRALLOC_TOP_DIR)/arm.gralloc.usage.prop
 TARGET_VENDOR_PROP += $(GRALLOC_TOP_DIR)/arm.egl.config.prop
+
+# enable ion-heap for kernel5.4 or 4.9
+ifneq ($(filter $(TARGET_BUILD_KERNEL_VERSION),5.4 4.9),)
+ifeq ($(TARGET_BUILD_KERNEL_VERSION), 4.9)
+BUILD_KERNEL_4_9 ?= true
+$(call soong_config_set,arm_gralloc,build_kernel_4_9,$(BUILD_KERNEL_4_9))
+endif
+$(warning Enabled ion-heap for kernel $(TARGET_BUILD_KERNEL_VERSION))
+ifneq ($(wildcard $(GRALLOC_TOP_DIR)/src/allocator/ion/Android.bp.disabled),)
+RESULT := $(shell mv $(GRALLOC_TOP_DIR)/src/allocator/ion/Android.bp.disabled $(GRALLOC_TOP_DIR)/src/allocator/ion/Android.bp)
+endif
+
+ifneq ($(wildcard $(GRALLOC_TOP_DIR)/src/allocator/dma_buf_heaps/Android.bp),)
+RESULT := $(shell mv $(GRALLOC_TOP_DIR)/src/allocator/dma_buf_heaps/Android.bp $(GRALLOC_TOP_DIR)/src/allocator/dma_buf_heaps/Android.bp.disabled.5.4)
+endif
+endif
