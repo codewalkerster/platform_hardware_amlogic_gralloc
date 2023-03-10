@@ -470,8 +470,11 @@ static int am_gralloc_exec_omx_policy(
 	if (scalar == 4 &&
 		property_get("vendor.media.omx2.1080p_buffer", prop, NULL) > 0) {
 		if (strstr(prop, "true")) {
-			size = (GRALLOC_ALIGN(1920, 64) * GRALLOC_ALIGN(1080, 64)) * 3 / 2;
-			MALI_GRALLOC_LOGW("[gralloc]: allocate fixed 1080p buffer for 1/16 usage size:%d", size);
+			int size_fixed_1080p = (GRALLOC_ALIGN(1920, 64) * GRALLOC_ALIGN(1080, 64)) * 3 / 2;
+			if (size < size_fixed_1080p) {
+				size = size_fixed_1080p;
+			}
+			MALI_GRALLOC_LOGW("[gralloc]: allocate fixed 1080p  or max 8k size buffer for 1/16 usage size:%d", size);
 		}
 	}
 	return size;
