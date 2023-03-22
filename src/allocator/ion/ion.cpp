@@ -844,8 +844,8 @@ int allocator_allocate(const buffer_descriptor_t *descriptor, private_handle_t *
 		descriptor->width, descriptor->height, descriptor->size, descriptor->layer_count,
 		descriptor->plane_info, descriptor->pixel_stride);
 #ifdef AML_GRALLOC_DEBUG
-	AML_GRALLOC_LOGI("%s: width:%d height:%d stride:%d format=0x%" PRIx64 " usage=0x%" PRIx64,
-		    __FUNCTION__, descriptor->width, descriptor->height, descriptor->pixel_stride,
+	AML_GRALLOC_LOGI("%s: handle:%p width:%d height:%d stride:%d format=0x%" PRIx64 " usage=0x%" PRIx64,
+		    __FUNCTION__, handle, descriptor->width, descriptor->height, descriptor->pixel_stride,
 		    descriptor->hal_format, usage);
 #endif
 	if (NULL == handle)

@@ -557,7 +557,8 @@ Error validateBufferSize(void* buffer,
 	buffer_handle_t buffer_handle = gRegisteredHandles->get(buffer);
 	if (!buffer_handle)
 	{
-		MALI_GRALLOC_LOGE("Buffer: %p has not been registered with Gralloc", buffer);
+		MALI_GRALLOC_LOGE("%s-> Buffer: %p buffer_handle: %p has not been registered with Gralloc",
+			__FUNCTION__, buffer, buffer_handle);
 		return Error::BAD_BUFFER;
 	}
 
@@ -724,12 +725,28 @@ void get(void *buffer, const IMapper::MetadataType &metadataType, IMapper::get_c
 	const private_handle_t *handle = static_cast<const private_handle_t *>(gRegisteredHandles->get(buffer));
 	if (handle == nullptr)
 	{
-		MALI_GRALLOC_LOGV("%s fallback to check again", __FUNCTION__);
-		/* fallback to check if exists a bufhandle's fd is the same with input handle*/
-		handle = static_cast<const private_handle_t *>(gRegisteredHandles->aml_get(buffer));
-		if (handle == nullptr)
-		{
-			MALI_GRALLOC_LOGE("Buffer: %p has not been registered with Gralloc", buffer);
+		auto buf_handle = static_cast<buffer_handle_t>(buffer);
+		if (private_handle_t::validate(buf_handle) < 0) {
+			MALI_GRALLOC_LOGE("ERROR not a valid handle");
+			hidl_cb(Error::BAD_BUFFER, hidl_vec<uint8_t>());
+			return;
+		}
+
+		handle = static_cast<const private_handle_t *>(buf_handle);
+		if (handle == nullptr) {
+			/* fallback to check if exists a bufhandle's fd is the same with input handle*/
+			MALI_GRALLOC_LOGV("%s fallback to check again", __FUNCTION__);
+			handle = static_cast<const private_handle_t *>(gRegisteredHandles->aml_get(buffer));
+			if (handle == nullptr) {
+				MALI_GRALLOC_LOGE("%s-> Buffer: %p has not been registered with gRegisteredHandles:%p",
+					__FUNCTION__, buffer, gRegisteredHandles);
+				hidl_cb(Error::BAD_BUFFER, hidl_vec<uint8_t>());
+				return;
+			}
+		}
+
+		if (handle->remote_pid != getpid()) {
+			MALI_GRALLOC_LOGE("ERROR not imported buffer");
 			hidl_cb(Error::BAD_BUFFER, hidl_vec<uint8_t>());
 			return;
 		}
@@ -748,7 +765,7 @@ Error set(void *buffer, const IMapper::MetadataType &metadataType, const hidl_ve
 		handle = static_cast<const private_handle_t *>(gRegisteredHandles->aml_get(buffer));
 		if (handle == nullptr)
 		{
-			MALI_GRALLOC_LOGE("Buffer: %p has not been registered with Gralloc", buffer);
+			MALI_GRALLOC_LOGE("%s-> Buffer: %p has not been registered with Gralloc", __FUNCTION__, buffer);
 			return Error::BAD_BUFFER;
 		}
 	}
