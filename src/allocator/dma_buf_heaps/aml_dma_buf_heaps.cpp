@@ -90,6 +90,7 @@ enum class dma_buf_heap
 	physically_contiguous_gfx,
 	physically_contiguous_fb,
 	physically_contiguous_codec_mm,
+	physically_contiguous_codec_mm_uncached,
 };
 
 struct custom_heap
@@ -130,6 +131,14 @@ const custom_heap physically_contiguous_codec_mm_heap =
 	},
 };
 
+const custom_heap physically_contiguous_codec_mm_heap_uncached =
+{
+	"heap-codecmm",
+	{
+		"codec_mm_cma",
+		0,
+	},
+};
 
 const custom_heap protected_memory_heap =
 {
@@ -146,6 +155,7 @@ const custom_heap custom_heaps[] =
 	physically_contiguous_fb_heap,
 	physically_contiguous_codec_mm_heap,
 	protected_memory_heap,
+	physically_contiguous_codec_mm_heap_uncached,
 };
 
 void am_gralloc_set_buffer_flags(
@@ -179,6 +189,8 @@ static const char *get_dma_buf_heap_name(dma_buf_heap heap)
 		return physically_contiguous_fb_heap.name;
 	case dma_buf_heap::physically_contiguous_codec_mm:
 		return physically_contiguous_codec_mm_heap.name;
+	case dma_buf_heap::physically_contiguous_codec_mm_uncached:
+		return physically_contiguous_codec_mm_heap_uncached.name;
 	}
 }
 
@@ -572,7 +584,8 @@ void am_gralloc_set_buffer_flags(
 		{
 			*priv_buffer_flag |= coherent_buffer_flag;
 		}
-		else if (heap == dma_buf_heap::physically_contiguous_codec_mm)
+		else if ((heap == dma_buf_heap::physically_contiguous_codec_mm) ||
+				 (heap == dma_buf_heap::physically_contiguous_codec_mm_uncached))
 		{
 			*priv_buffer_flag |= coherent_buffer_flag;
 		}
@@ -615,7 +628,10 @@ enum dma_buf_heap am_gralloc_pick_dma_buf_heap(
 		(usage & GRALLOC_USAGE_HW_CAMERA_WRITE) ||
 		(usage & GRALLOC_USAGE_HW_VIDEO_ENCODER))
 	{
-		return dma_buf_heap::physically_contiguous_codec_mm;
+		if (usage & (GRALLOC_USAGE_SW_WRITE_MASK | GRALLOC_USAGE_SW_READ_MASK))
+			return dma_buf_heap::physically_contiguous_codec_mm;
+		else
+			return dma_buf_heap::physically_contiguous_codec_mm_uncached;
 	}
 
 #if defined(GRALLOC_USE_CONTIGUOUS_DISPLAY_MEMORY) && GRALLOC_USE_CONTIGUOUS_DISPLAY_MEMORY
