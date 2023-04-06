@@ -621,7 +621,10 @@ enum dma_buf_heap am_gralloc_pick_dma_buf_heap(
 
 	if (usage & GRALLOC_USAGE_HW_FB)
 	{
-		return dma_buf_heap::physically_contiguous_fb;
+		if (usage & (GRALLOC_USAGE_SW_WRITE_MASK | GRALLOC_USAGE_SW_READ_MASK))
+			return dma_buf_heap::system;
+		else
+			return dma_buf_heap::physically_contiguous_fb;
 	}
 
 	if (am_gralloc_is_omx_osd_extend_usage(usage) ||
@@ -661,7 +664,10 @@ enum dma_buf_heap am_gralloc_pick_dma_buf_heap(
 				(descriptor->height <= max_composer_buf_height) &&
 				(!is_android_yuv_format(descriptor->hal_format)))
 			{
-				return dma_buf_heap::physically_contiguous_gfx;
+				if (usage & (GRALLOC_USAGE_SW_WRITE_MASK | GRALLOC_USAGE_SW_READ_MASK))
+					return dma_buf_heap::system;
+				else
+					return dma_buf_heap::physically_contiguous_gfx;
 			}
 		}
  #else
