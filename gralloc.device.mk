@@ -80,12 +80,7 @@ ifeq ($(TARGET_BUILD_KERNEL_VERSION), 4.9)
 BUILD_KERNEL_4_9 ?= true
 $(call soong_config_set,arm_gralloc,build_kernel_4_9,$(BUILD_KERNEL_4_9))
 endif
-$(warning Enabled ion-heap for kernel $(TARGET_BUILD_KERNEL_VERSION))
-ifneq ($(wildcard $(GRALLOC_TOP_DIR)/src/allocator/ion/Android.bp.disabled),)
-RESULT := $(shell mv $(GRALLOC_TOP_DIR)/src/allocator/ion/Android.bp.disabled $(GRALLOC_TOP_DIR)/src/allocator/ion/Android.bp)
-endif
-
-ifneq ($(wildcard $(GRALLOC_TOP_DIR)/src/allocator/dma_buf_heaps/Android.bp),)
-RESULT := $(shell mv $(GRALLOC_TOP_DIR)/src/allocator/dma_buf_heaps/Android.bp $(GRALLOC_TOP_DIR)/src/allocator/dma_buf_heaps/Android.bp.disabled.5.4)
-endif
+$(call soong_config_set,arm_gralloc,use_ion_flag,true)
+else
+$(call soong_config_set,arm_gralloc,use_dma_flag,true)
 endif
