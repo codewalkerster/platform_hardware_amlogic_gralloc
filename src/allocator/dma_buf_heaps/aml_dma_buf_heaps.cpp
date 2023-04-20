@@ -535,7 +535,8 @@ static int am_gralloc_exec_uvm_policy(
 		if (usage & GRALLOC_USAGE_PRIVATE_3)
 			agu->uvm_flag |= UVM_FBC_DEC;
 
-		if (am_gralloc_is_video_decoder_OSD_buffer_usage(usage))
+		if (am_gralloc_is_video_decoder_OSD_buffer_usage(usage) ||
+			am_gralloc_is_omx_osd_extend_usage(usage))
 			agu->uvm_flag |= UVM_SKIP_REALLOC;
 
 		if (need_do_width_height_align(usage, bufDescriptor->width, bufDescriptor->height))
