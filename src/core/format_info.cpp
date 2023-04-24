@@ -307,6 +307,15 @@ const std::vector<format_info_t> formats = {
 		.tile_size = 1, .has_alpha = false, .is_rgb = false, .is_yuv = false,
 		.afbc = false, .linear = true, .yuv_transform = false, .flex = false, .block_linear = false, .afrc = false,
 	},
+#ifdef GRALLOC_AML_EXTEND
+	{
+		.id = AML_GRALLOC_FORMAT_INTERNAL_YUV444_8BIT_I,
+		.npln = 1, .ncmp = { 3, 0, 0 }, .bps = 8, .bpp_afbc = { 0, 0, 0 }, .bpp = { 24, 0, 0 },
+		.hsub = 1, .vsub = 1, .align_w = 1, .align_h = 1, ALIGN_W_CPU_DEFAULT,
+		.tile_size = 1, .has_alpha = false, .is_rgb = false, .is_yuv = true,
+		.afbc = false, .linear = true, .yuv_transform = false, .flex = false,
+	},
+#endif
 };
 
 
@@ -818,6 +827,21 @@ const format_ip_support_t formats_ip_support[] = {
 		.vpu_wr = F_NONE,
 		.cam_wr = F_NONE,
 	},
+#ifdef GRALLOC_AML_EXTEND
+	{
+		.id = AML_GRALLOC_FORMAT_INTERNAL_YUV444_8BIT_I,
+		.cpu_rd = F_LIN,
+		.cpu_wr = F_LIN,
+		.gpu_rd = F_LIN,
+		.gpu_wr = F_LIN,
+		.dpu_rd = F_LIN,
+		.dpu_wr = F_LIN,
+		.dpu_aeu_wr = F_LIN,
+		.vpu_rd = F_LIN,
+		.vpu_wr = F_LIN,
+		.cam_wr = F_LIN,
+	},
+#endif
 };
 
 typedef struct
@@ -852,7 +876,7 @@ static const hal_int_fmt hal_to_internal_format[] =
 	{ HAL_PIXEL_FORMAT_RAW10,                  MALI_GRALLOC_FORMAT_INTERNAL_RAW10 },
 	{ HAL_PIXEL_FORMAT_RAW12,                  MALI_GRALLOC_FORMAT_INTERNAL_RAW12 },
 	{ HAL_PIXEL_FORMAT_YCbCr_422_888,          MALI_GRALLOC_FORMAT_INTERNAL_YUV422_8BIT },
-	{ HAL_PIXEL_FORMAT_YCbCr_444_888,          MALI_GRALLOC_FORMAT_INTERNAL_UNDEFINED },
+	{ HAL_PIXEL_FORMAT_YCbCr_444_888,          AML_GRALLOC_FORMAT_INTERNAL_YUV444_8BIT_I },
 	{ HAL_PIXEL_FORMAT_FLEX_RGB_888,           MALI_GRALLOC_FORMAT_INTERNAL_UNDEFINED },
 	{ HAL_PIXEL_FORMAT_FLEX_RGBA_8888,         MALI_GRALLOC_FORMAT_INTERNAL_UNDEFINED },
 	{ HAL_PIXEL_FORMAT_RGBA_1010102,           MALI_GRALLOC_FORMAT_INTERNAL_RGBA_1010102 },

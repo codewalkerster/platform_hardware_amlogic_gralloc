@@ -64,6 +64,7 @@ const static std::unordered_map<mali_gralloc_internal_format, table_entry> table
 
 	/* Format introduced in Android P, mapped to MALI_GRALLOC_FORMAT_INTERNAL_P010. */
 	{ HAL_PIXEL_FORMAT_YCBCR_P010, {DRM_FORMAT_P010, format_colormodel::yuv} },
+	{ AML_GRALLOC_FORMAT_INTERNAL_YUV444_8BIT_I, {DRM_FORMAT_YUV444, format_colormodel::yuv} },
 };
 
 uint32_t drm_fourcc_from_handle(const private_handle_t *hnd)
