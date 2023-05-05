@@ -645,10 +645,7 @@ enum dma_buf_heap am_gralloc_pick_dma_buf_heap(
 
 	if (usage & GRALLOC_USAGE_HW_FB)
 	{
-		if (usage & (GRALLOC_USAGE_SW_WRITE_MASK | GRALLOC_USAGE_SW_READ_MASK))
-			return dma_buf_heap::system;
-		else
-			return dma_buf_heap::physically_contiguous_fb;
+		return dma_buf_heap::physically_contiguous_fb;
 	}
 
 	if (am_gralloc_is_omx_osd_extend_usage(usage) ||
