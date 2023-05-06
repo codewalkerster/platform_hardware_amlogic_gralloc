@@ -29,6 +29,7 @@
 #ifdef GRALLOC_AML_EXTEND
 #ifdef BUILD_KERNEL_4_9
 #include <ion/ion.h>
+#include <linux/ion.h>
 #include "ion_4.12.h"
 #else
 #include "ion_5.4.h"

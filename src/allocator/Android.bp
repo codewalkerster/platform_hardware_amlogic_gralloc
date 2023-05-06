@@ -32,6 +32,7 @@ soong_config_module_type {
 	properties: [
 		"cflags",
 		"srcs",
+		"include_dirs",
 	],
 }
 
@@ -73,6 +74,9 @@ arm_gralloc_allocator_cc_defaults {
 		build_kernel_4_9: {
 			cflags: [
 				"-DBUILD_KERNEL_4_9=1",
+			],
+			include_dirs: [
+				"system/memory/libion/include",
 			],
 		},
 		use_ion_flag: {
