@@ -39,6 +39,7 @@
 #define AFBC_PIXELS_PER_BLOCK 256
 #define AFBC_HEADER_BUFFER_BYTES_PER_BLOCKENTRY 16
 
+bool gralloc_enable_debugging_log = false;
 
 /*
  * Get a global unique ID

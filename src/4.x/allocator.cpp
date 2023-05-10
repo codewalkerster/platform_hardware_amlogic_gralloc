@@ -18,7 +18,8 @@
 #include "hidl_common/descriptor.h"
 #include "hidl_common/allocator.h"
 #include "allocator/allocator.h"
-
+#include <cutils/properties.h>
+#include "log.h"
 namespace arm
 {
 namespace allocator
@@ -33,6 +34,14 @@ using android::hardware::hidl_string;
 
 GrallocAllocator::GrallocAllocator()
 {
+	char prop[PROPERTY_VALUE_MAX];
+	if (property_get("ro.vendor.gralloc.debugging.log", prop, NULL) > 0)
+	{
+		if (strstr(prop, "true"))
+		{
+			gralloc_enable_debugging_log = true;
+		}
+	}
 }
 
 GrallocAllocator::~GrallocAllocator()

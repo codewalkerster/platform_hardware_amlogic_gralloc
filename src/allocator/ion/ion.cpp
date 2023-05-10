@@ -300,9 +300,7 @@ int ion_device::alloc_from_ion_heap(uint64_t usage, size_t size,
 	if (heap_type == ION_HEAP_TYPE_SECURE)
 		flags |= ION_FLAG_EXTEND_MESON_HEAP_SECURE;
 
-#ifdef AML_GRALLOC_DEBUG
 	AML_GRALLOC_LOGI("%s: flags = %u", __func__, flags);
-#endif
 
 	bool system_heap_exist = false;
 
@@ -808,10 +806,8 @@ int allocator_allocate(const buffer_descriptor_t *descriptor, private_handle_t *
 #ifdef GRALLOC_AML_EXTEND
 	am_gralloc_set_ion_flags(heap_type, usage, NULL, &ion_flags);
 	shared_fd = am_gralloc_exec_uvm_policy(descriptor, usage, agu);
-#ifdef AML_GRALLOC_DEBUG
 	AML_GRALLOC_LOGI("shared_fd: ( %d ) agu->delay_alloc:%d agu->uvm_flag:%d",
 					shared_fd, agu->delay_alloc, agu->uvm_flag);
-#endif
 
 	if (shared_fd < 0) {
 		if (agu->uvm_buffer_flag) {
@@ -844,11 +840,10 @@ int allocator_allocate(const buffer_descriptor_t *descriptor, private_handle_t *
 		descriptor->consumer_usage, descriptor->producer_usage, std::move(fd), descriptor->hal_format, descriptor->alloc_format,
 		descriptor->width, descriptor->height, descriptor->size, descriptor->layer_count,
 		descriptor->plane_info, descriptor->pixel_stride);
-#ifdef AML_GRALLOC_DEBUG
 	AML_GRALLOC_LOGI("%s: handle:%p width:%d height:%d stride:%d format=0x%" PRIx64 " usage=0x%" PRIx64,
 		    __FUNCTION__, handle, descriptor->width, descriptor->height, descriptor->pixel_stride,
 		    descriptor->hal_format, usage);
-#endif
+
 	if (NULL == handle)
 	{
 		MALI_GRALLOC_LOGE("[%s] Private handle create failed! w*h(%d*%d) stride:%d format=0x%" PRIx64 " usage=0x%" PRIx64,

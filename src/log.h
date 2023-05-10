@@ -21,15 +21,12 @@
 #endif
 
 #include <log/log.h>
-
+extern bool gralloc_enable_debugging_log;
 //#define AML_GRALLOC_DEBUG 1
 /* Delegate logging to Android */
-#ifdef AML_GRALLOC_DEBUG
-#define AML_GRALLOC_LOGI(...) ALOGI(__VA_ARGS__)
-#define MALI_GRALLOC_LOGV(...) ALOGI(__VA_ARGS__)
-#else
-#define MALI_GRALLOC_LOGV(...) ALOGV(__VA_ARGS__)
-#endif
+
+#define AML_GRALLOC_LOGI(...) do { if (gralloc_enable_debugging_log) ALOGI(__VA_ARGS__); } while(0)
+#define MALI_GRALLOC_LOGV(...) AML_GRALLOC_LOGI(__VA_ARGS__)
 
 #define MALI_GRALLOC_LOGI(...) ALOGI(__VA_ARGS__)
 #define MALI_GRALLOC_LOGW(...) ALOGW(__VA_ARGS__)

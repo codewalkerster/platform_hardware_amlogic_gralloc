@@ -225,10 +225,8 @@ int allocator_allocate(const buffer_descriptor_t *descriptor, private_handle_t *
 	struct uvm_exec_data *agu = (struct uvm_exec_data *)malloc(sizeof(uvm_exec_data));
 	int shared_fd = am_gralloc_exec_uvm_policy(descriptor, usage, agu);
 
-#ifdef AML_GRALLOC_DEBUG
 	AML_GRALLOC_LOGI("shared_fd: (%d) agu->delay_alloc:%d agu->uvm_flag:%d",
 					shared_fd, agu->delay_alloc, agu->uvm_flag);
-#endif
 
 	if (shared_fd < 0) {
 		if (agu->uvm_buffer_flag) {
@@ -238,13 +236,9 @@ int allocator_allocate(const buffer_descriptor_t *descriptor, private_handle_t *
 		}
 
 		shared_fd = allocator->Alloc(heap_name, descriptor->size);
-#ifdef AML_GRALLOC_DEBUG
 		AML_GRALLOC_LOGI("not video buffer, allocate from heap: %s fd:%d", heap_name, shared_fd);
-#endif
 		agu->delay_alloc = 0;
 	}
-
-
 
 	if (shared_fd < 0)
 	{
@@ -260,7 +254,8 @@ int allocator_allocate(const buffer_descriptor_t *descriptor, private_handle_t *
 		{
 			MALI_GRALLOC_LOGW("libdmabufheap allocation failed for %s heap, falling back to system heap", heap_name);
 			priv_buffer_flag &= ~(am_gralloc_get_coherent_extend_flag());
-			shared_fd = allocator->Alloc(get_dma_buf_heap_name(dma_buf_heap::system), descriptor->size);
+			heap_name = get_dma_buf_heap_name(dma_buf_heap::system);
+			shared_fd = allocator->Alloc(heap_name, descriptor->size);
 			if (shared_fd < 0)
 			{
 				MALI_GRALLOC_LOGE("libdmabufheap fallback allocation failed");
@@ -286,10 +281,8 @@ int allocator_allocate(const buffer_descriptor_t *descriptor, private_handle_t *
 		} else {
 			memset(vaddr, 0, map_size);
 			munmap(vaddr, map_size);
-			#ifdef AML_GRALLOC_DEBUG
-			AML_GRALLOC_LOGI("%s:%d bufDescriptor->size:%d usage=0x%" PRIx64,
+			AML_GRALLOC_LOGI("%s:%d bufDescriptor->size:%zu usage=0x%" PRIx64,
 			    __FUNCTION__, __LINE__, descriptor->size, usage);
-			#endif
 		}
 	}
 
@@ -299,11 +292,9 @@ int allocator_allocate(const buffer_descriptor_t *descriptor, private_handle_t *
 	    descriptor->consumer_usage, descriptor->producer_usage, std::move(fd), descriptor->hal_format,
 	    descriptor->alloc_format, descriptor->width, descriptor->height, descriptor->size, descriptor->layer_count,
 	    descriptor->plane_info, descriptor->pixel_stride);
-#ifdef AML_GRALLOC_DEBUG
-	AML_GRALLOC_LOGI("%s: heap_name:%s width:%d height:%d stride:%d format=0x%" PRIx64 " usage=0x%" PRIx64,
-			__FUNCTION__, heap_name, descriptor->width, descriptor->height, descriptor->pixel_stride,
+	AML_GRALLOC_LOGI("%s: handle:%p heap_name:%s width:%d height:%d stride:%d format=0x%" PRIx64 " usage=0x%" PRIx64,
+			__FUNCTION__, *out_handle, heap_name, descriptor->width, descriptor->height, descriptor->pixel_stride,
 			descriptor->hal_format, usage);
-#endif
 
 	if (nullptr == *out_handle)
 	{
