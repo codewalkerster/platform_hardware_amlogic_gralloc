@@ -27,7 +27,7 @@ bool am_gralloc_is_video_decoder_one_sixteenth_buffer_usage(uint64_t usage);
 bool am_gralloc_is_video_decoder_full_buffer_usage(uint64_t usage);
 bool am_gralloc_is_video_decoder_OSD_buffer_usage(uint64_t usage);
 bool am_gralloc_is_secure_extend_usage(uint64_t usage);
-
+bool am_gralloc_is_video_decoder_replace_buffer_usage(uint64_t usage);
 /* For v4l2 decoder, 1:1 buffer is UVM_IMM_ALLOC,
  * real width and height will be passed to gralloc,
  * but decoder need an aligned buffer size.

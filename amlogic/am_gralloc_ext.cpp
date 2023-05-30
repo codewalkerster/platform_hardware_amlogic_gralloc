@@ -171,6 +171,12 @@ uint64_t am_gralloc_get_video_decoder_full_buffer_usage() {
             omx_metadata_usage);
 }
 
+uint64_t am_gralloc_get_video_decoder_replace_buffer_usage() {
+    uint64_t omx_metadata_usage = am_gralloc_get_omx_metadata_producer_usage();
+    return (MESON_GRALLOC_USAGE_DECODER_BUF_REPLACE |
+            omx_metadata_usage);
+}
+
 uint64_t am_gralloc_get_video_decoder_OSD_buffer_usage() {
     uint64_t omx_osd_usage = am_gralloc_get_omx_osd_producer_usage();
     return (MESON_GRALLOC_USAGE_VIDEO_DECODER_FULL |

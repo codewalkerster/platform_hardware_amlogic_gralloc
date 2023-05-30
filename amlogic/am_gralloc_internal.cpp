@@ -82,6 +82,16 @@ bool am_gralloc_is_video_decoder_OSD_buffer_usage(
     return false;
 }
 
+bool am_gralloc_is_video_decoder_replace_buffer_usage(
+    uint64_t usage) {
+    uint64_t video_decoder_replace_buffer_usage = MESON_GRALLOC_USAGE_DECODER_BUF_REPLACE;
+    if (am_gralloc_is_omx_metadata_extend_usage(usage)
+        && ((usage & video_decoder_replace_buffer_usage) == video_decoder_replace_buffer_usage)) {
+        return true;
+    }
+    return false;
+}
+
 bool am_gralloc_is_secure_extend_usage(
     uint64_t usage) {
     if (usage & GRALLOC1_PRODUCER_USAGE_PROTECTED) {

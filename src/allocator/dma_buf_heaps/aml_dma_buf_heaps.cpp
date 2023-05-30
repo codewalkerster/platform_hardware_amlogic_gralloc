@@ -369,6 +369,7 @@ int allocator_map(private_handle_t *handle)
 	void *hint = nullptr;
 	int protection = PROT_READ | PROT_WRITE, flags = MAP_SHARED;
 	off_t page_offset = 0;
+	int size = handle->size;
 
 	if (handle->ion_delay_alloc)
 		return 0;
@@ -377,12 +378,19 @@ int allocator_map(private_handle_t *handle)
 		am_gralloc_is_video_decoder_one_sixteenth_buffer_usage(usage)) {
 		return 0;
 	}
-	void *mapping = mmap(hint, handle->size, protection, flags, handle->share_fd, page_offset);
+
+	if (am_gralloc_is_video_decoder_replace_buffer_usage(usage)) {
+		size = PAGE_SIZE;
+	}
+	void *mapping = mmap(hint, size, protection, flags, handle->share_fd, page_offset);
 	if (MAP_FAILED  == mapping)
 	{
-		MALI_GRALLOC_LOGE("mmap(share_fd = %d) failed: %s", handle->share_fd, strerror(errno));
+		MALI_GRALLOC_LOGE("mmap(share_fd = %d) failed: %s. size = %d, usage=0x%" PRIx64,
+			handle->share_fd, strerror(errno), size, usage);
 		return -errno;
 	}
+	AML_GRALLOC_LOGI("mmap(share_fd = %d) succ: all_size=%d, calc_size=%d, usage=0x%" PRIx64 ", mapping=%p",
+		handle->share_fd, size, handle->size, usage, mapping);
 
 	handle->base = static_cast<std::byte *>(mapping);
 
@@ -393,12 +401,19 @@ void allocator_unmap(private_handle_t *handle)
 {
 	void *base = static_cast<std::byte *>(handle->base);
 	uint64_t usage = handle->producer_usage | handle->consumer_usage;
+	int size = handle->size;
+
 	if (handle->ion_delay_alloc ||
 		am_gralloc_is_video_decoder_quarter_buffer_usage(usage) ||
 		am_gralloc_is_video_decoder_one_sixteenth_buffer_usage(usage)) {
 		return;
 	}
-	if (munmap(base, handle->size) < 0)
+
+	if (am_gralloc_is_video_decoder_replace_buffer_usage(usage)) {
+		size = PAGE_SIZE;
+	}
+
+	if (munmap(base, size) < 0)
 	{
 		MALI_GRALLOC_LOGE("munmap(base = %p, size = %d) failed: %s", base, handle->size, strerror(errno));
 	}
@@ -446,6 +461,11 @@ static int am_gralloc_exec_omx_policy(
 	const buffer_descriptor_t *max_bufDescriptor) {
 
 	char prop[PROPERTY_VALUE_MAX];
+
+	if (am_gralloc_is_video_decoder_replace_buffer_usage(
+			max_bufDescriptor->consumer_usage | max_bufDescriptor->producer_usage)) {
+		return PAGE_SIZE;
+	}
 	/*
 	 * support for 8k video
 	 * Set max 8k size if bigger then 4k
@@ -515,6 +535,8 @@ static int am_gralloc_exec_uvm_policy(
 			buf_scalar = 2;
 		} else if (am_gralloc_is_video_decoder_one_sixteenth_buffer_usage(usage)) {
 			buf_scalar = 4;
+		} else if (am_gralloc_is_video_decoder_replace_buffer_usage(usage)) {
+			buf_scalar = (int)sqrt(bufDescriptor->size / PAGE_SIZE);
 		} else {
 			agu->uvm_flag = UVM_DELAY_ALLOC;
 			agu->delay_alloc = 1;
@@ -562,7 +584,8 @@ static int am_gralloc_exec_uvm_policy(
 				__func__, uvm_fd);
 			return ret;
 		}
-
+		MALI_GRALLOC_LOGI("%s: alloc from UVM success. fd = %d, flags = 0x%x, scalar = %d, scaled_buf_size = %d",
+			__func__, uad.fd, agu->uvm_flag, buf_scalar, v4l2_dec_max_buf_size);
 		return uad.fd;
 	}
 	return ret;
@@ -641,7 +664,7 @@ enum dma_buf_heap am_gralloc_pick_dma_buf_heap(
 		static unsigned int max_composer_buf_width = 0;
 		static unsigned int max_composer_buf_height = 0;
 
-		ALOGD("BOARD_RESOLUTION_RATIO=%d", BOARD_RESOLUTION_RATIO);
+		AML_GRALLOC_LOGI("BOARD_RESOLUTION_RATIO=%d", BOARD_RESOLUTION_RATIO);
 		switch (BOARD_RESOLUTION_RATIO) {
 			case 720:
 				max_composer_buf_width = 1280;

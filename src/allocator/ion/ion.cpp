@@ -899,6 +899,9 @@ int allocator_map(private_handle_t *handle)
 			am_gralloc_is_video_decoder_one_sixteenth_buffer_usage(usage)) {
 			return 0;
 		}
+		if (am_gralloc_is_video_decoder_replace_buffer_usage(usage)) {
+			size = PAGE_SIZE;
+		}
 #endif
 		unsigned char *mappedAddress = (unsigned char *)mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_SHARED, handle->share_fd, 0);
 #ifdef GRALLOC_AML_EXTEND
@@ -936,6 +939,9 @@ void allocator_unmap(private_handle_t *handle)
 		if (am_gralloc_is_video_decoder_quarter_buffer_usage(usage) ||
 			am_gralloc_is_video_decoder_one_sixteenth_buffer_usage(usage)) {
 			break;
+		}
+		if (am_gralloc_is_video_decoder_replace_buffer_usage(usage)) {
+			size = PAGE_SIZE;
 		}
 		if (!handle->ion_delay_alloc && munmap(base, size) < 0)
 #else
@@ -1010,6 +1016,11 @@ static int am_gralloc_exec_omx_policy(
 					const buffer_descriptor_t *descriptor) {
 	char prop[PROPERTY_VALUE_MAX];
 
+	if (am_gralloc_is_video_decoder_replace_buffer_usage(
+			descriptor->consumer_usage | descriptor->producer_usage)) {
+		return PAGE_SIZE;
+	}
+
 	/*
 	 * support for 8k video
 	 * Set max 8k size if bigger then 4k
@@ -1076,6 +1087,8 @@ static int am_gralloc_exec_uvm_policy(
 			buf_scalar = 2;
 		} else if (am_gralloc_is_video_decoder_one_sixteenth_buffer_usage(usage)) {
 			buf_scalar = 4;
+		} else if (am_gralloc_is_video_decoder_replace_buffer_usage(usage)) {
+			buf_scalar = 7; // sqrt() undeclared. Fill in a special value with reference to dma
 		} else {
 			agu->uvm_flag = UVM_DELAY_ALLOC;
 			agu->delay_alloc = 1;
@@ -1115,6 +1128,8 @@ static int am_gralloc_exec_uvm_policy(
 				__func__, uvm_fd);
 			return ret;
 		}
+		MALI_GRALLOC_LOGI("%s: alloc from UVM success. fd = %d, flags = 0x%x, scalar = %d, scaled_buf_size = %d",
+			__func__, uad.fd, agu->uvm_flag, buf_scalar, v4l2_dec_max_buf_size);
 
 		return uad.fd;
 	}

@@ -27,6 +27,7 @@ uint64_t am_gralloc_get_video_decoder_quarter_buffer_usage();
 uint64_t am_gralloc_get_video_decoder_one_sixteenth_buffer_usage();
 uint64_t am_gralloc_get_video_decoder_full_buffer_usage();
 uint64_t am_gralloc_get_video_decoder_OSD_buffer_usage();
+uint64_t am_gralloc_get_video_decoder_replace_buffer_usage();
 
 /*
 For modules
