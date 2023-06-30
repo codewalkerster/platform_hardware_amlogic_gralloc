@@ -36,6 +36,7 @@ struct uvm_exec_data {
 #define UVM_SKIP_REALLOC     (1 << 4)
 #define UVM_USAGE_CACHED     (1 << 5)
 #define UVM_FBC_DEC          (1 << 6)
+#define UVM_SIZE_SKIP        (1 << 7)
 
 
 

@@ -537,12 +537,15 @@ static int am_gralloc_exec_uvm_policy(
 
 		if (need_do_width_height_align(usage, bufDescriptor->width, bufDescriptor->height))
 			aligned_bit = 64;
-
-		v4l2_dec_max_buf_size = am_gralloc_exec_omx_policy(
-									v4l2_dec_max_buf_size,
-									buf_scalar,
-									bufDescriptor);
-
+		if (buf_scalar > 1) {
+			v4l2_dec_max_buf_size = am_gralloc_exec_omx_policy(
+										v4l2_dec_max_buf_size,
+										buf_scalar,
+										bufDescriptor);
+		}
+		else
+			v4l2_dec_max_buf_size = (int)bufDescriptor->size;
+		agu->uvm_flag |= UVM_SIZE_SKIP;
 		struct uvm_alloc_data uad = {
 			.size = (int)bufDescriptor->size,
 			.byte_stride = (int)bufDescriptor->plane_info[0].byte_stride,
