@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2022 ARM Limited. All rights reserved.
+ * Copyright (C) 2016-2023 ARM Limited. All rights reserved.
  *
  * Copyright (C) 2008 The Android Open Source Project
  *
@@ -17,8 +17,6 @@
  */
 #pragma once
 
-#include <hardware/hardware.h>
-#include "private_interface_types.h"
 #include "buffer.h"
 #include "core/buffer_descriptor.h"
 #include "core/internal_format.h"
@@ -147,9 +145,7 @@ using alloc_type_t = AllocType;
 
 int mali_gralloc_derive_format_and_size(buffer_descriptor_t *descriptor);
 
-int mali_gralloc_buffer_allocate(buffer_descriptor_t *descriptor, private_handle_t **out_handle);
-
-int mali_gralloc_buffer_free(private_handle_t *handle);
+unique_private_handle mali_gralloc_buffer_allocate(buffer_descriptor_t *descriptor);
 
 uint32_t lcm(uint32_t a, uint32_t b);
 

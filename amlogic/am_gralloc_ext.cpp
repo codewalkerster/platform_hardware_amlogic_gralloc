@@ -13,7 +13,7 @@
 #include <gralloctypes/Gralloc4.h>
 #include <aidl/arm/graphics/AmlMetadataType.h>
 #include <aidl/arm/graphics/AmlMetadataType.h>
-#include <buffer.h>
+#include <core/buffer.h>
 #include <gralloc/formats.h>
 
 
@@ -29,7 +29,6 @@ using android::hardware::graphics::mapper::V4_0::IMapper;
 using android::hardware::hidl_vec;
 using android::gralloc4::encodeInt32;
 using android::gralloc4::decodeInt32;
-
 
 #define GRALLOC_AML_METADATA_TYPE_NAME "arm.graphics.AmlMetadataType"
 const static IMapper::MetadataType AmlMetadataType_AM_OMX_TUNNEL{
@@ -47,8 +46,10 @@ const static IMapper::MetadataType AmlMetadataType_AM_OMX_VIDEO_TYPE{
     static_cast<int64_t>(aidl::arm::graphics::AmlMetadataType::AM_OMX_VIDEO_TYPE)
 };
 
-const static IMapper::MetadataType AmlMetadataType_AM_OMX_BUFFER_SEQUENCE{ GRALLOC_AML_METADATA_TYPE_NAME,
-    static_cast<int64_t>(aidl::arm::graphics::AmlMetadataType::AM_OMX_BUFFER_SEQUENCE) };
+const static IMapper::MetadataType AmlMetadataType_AM_OMX_BUFFER_SEQUENCE{
+    GRALLOC_AML_METADATA_TYPE_NAME,
+    static_cast<int64_t>(aidl::arm::graphics::AmlMetadataType::AM_OMX_BUFFER_SEQUENCE)
+};
 
 static IMapper &get_service()
 {
@@ -483,22 +484,17 @@ int am_gralloc_destroy_sideband_handle(native_handle_t * hnd) {
     if (buffer->id != AM_SIDEBAND_IDENTIFIER)
         return GRALLOC1_ERROR_BAD_HANDLE;
 
-    int ret = GRALLOC1_ERROR_NONE;
-    if (buffer) {
-        if (buffer->flags == private_handle_t::PRIV_FLAGS_VIDEO_TUNNEL) {
-            *channel = buffer->channel;
-        } else {
-            if (buffer->channel == AM_VIDEO_DEFAULT || buffer->channel == AM_VIDEO_DEFAULT_LEGACY) {
-                *channel = AM_VIDEO_DEFAULT;
-            } else {
-                *channel = AM_VIDEO_EXTERNAL;
-            }
-        }
+    if (buffer->flags == private_handle_t::PRIV_FLAGS_VIDEO_TUNNEL) {
+        *channel = buffer->channel;
     } else {
-        ret = GRALLOC1_ERROR_BAD_HANDLE;
+        if (buffer->channel == AM_VIDEO_DEFAULT || buffer->channel == AM_VIDEO_DEFAULT_LEGACY) {
+            *channel = AM_VIDEO_DEFAULT;
+        } else {
+            *channel = AM_VIDEO_EXTERNAL;
+        }
     }
 
-    return ret;
+    return GRALLOC1_ERROR_NONE;
 }
 
 int am_gralloc_get_sideband_type(const native_handle_t* hnd, int* type) {
@@ -576,14 +572,14 @@ int am_gralloc_get_vpu_afbc_mask(const native_handle_t * hnd) {
     private_handle_t const* buffer = hnd ? private_handle_t::downcast(hnd) : NULL;
 
     if (buffer) {
-        uint64_t internalFormat = buffer->alloc_format;
+        auto internalFormat = buffer->alloc_format;
         int afbcFormat = 0;
 
-        if (internalFormat & MALI_GRALLOC_INTFMT_AFBCENABLE_MASK) {
+        if (internalFormat.is_afbc()) {
             afbcFormat |=
                 (VPU_AFBC_EN | VPU_AFBC_YUV_TRANSFORM |VPU_AFBC_BLOCK_SPLIT);
 
-            if (internalFormat & MALI_GRALLOC_INTFMT_AFBC_WIDEBLK) {
+            if (internalFormat.get_afbc_32x8()) {
                 afbcFormat |= VPU_AFBC_SUPER_BLOCK_ASPECT;
             }
 
@@ -593,7 +589,7 @@ int am_gralloc_get_vpu_afbc_mask(const native_handle_t * hnd) {
             }
             #endif
 
-            if (internalFormat & MALI_GRALLOC_INTFMT_AFBC_TILED_HEADERS) {
+            if (internalFormat.get_afbc_tiled_headers()) {
                 afbcFormat |= VPU_AFBC_TILED_HEADER_EN;
             }
 

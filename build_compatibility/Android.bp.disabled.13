@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2022 Arm Limited.
+ * Copyright (C) 2021-2023 Arm Limited.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,23 +16,49 @@
  */
 
 cc_defaults {
+    name: "android_hardware_graphics_common_defaults",
+    shared_libs: [
+        "android.hardware.graphics.common-V3-ndk",
+    ],
+}
+
+cc_defaults {
     name: "arm_gralloc_uses_aidl_defaults",
-    shared_libs: ["arm.graphics-V3-ndk"],
+    defaults: [
+        "android_hardware_graphics_common_defaults",
+    ],
+    shared_libs: [
+        "arm.graphics-V4-ndk",
+    ],
+    export_shared_lib_headers: ["arm.graphics-V4-ndk"],
 }
 
 cc_defaults {
-	name: "arm_gralloc_capabilities_version_specifics",
-	header_libs: [
-		"libxsdc-utils",
-	],
+    name: "arm_gralloc_capabilities_version_specifics",
+    header_libs: [
+        "libxsdc-utils",
+    ],
 }
 
 cc_defaults {
-	name: "arm_gralloc_xml_configuration_version_specifics",
-	header_libs: [
-		"libxsdc-utils",
-	],
-	export_header_lib_headers: [
-		"libxsdc-utils",
-	],
+    name: "arm_gralloc_xml_configuration_version_specifics",
+    header_libs: [
+        "libxsdc-utils",
+    ],
+    export_header_lib_headers: [
+        "libxsdc-utils",
+    ],
+}
+
+cc_defaults {
+    name: "arm_gralloc_mapper_version_defaults",
+    cflags: [
+    ],
+}
+
+cc_defaults {
+    name: "gralloc_allocator_platform_dependencies",
+    shared_libs: [
+        "android.hardware.graphics.allocator-V1-ndk",
+    ],
 }

@@ -12,7 +12,7 @@
 
 #include <hardware/gralloc1.h>
 #include <utils/NativeHandle.h>
-#include <buffer.h>
+#include <core/buffer.h>
 
 /*
 For ioctl uvm operation

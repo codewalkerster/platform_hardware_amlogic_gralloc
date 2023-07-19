@@ -18,8 +18,8 @@
 package arm.graphics;
 @Backing(type="long") @VintfStability
 enum AmlMetadataType {
-  AM_OMX_TUNNEL = 2,
-  AM_OMX_FLAG = 3,
-  AM_OMX_VIDEO_TYPE = 4,
-  AM_OMX_BUFFER_SEQUENCE = 5,
+  AM_OMX_TUNNEL = 3,
+  AM_OMX_FLAG = 4,
+  AM_OMX_VIDEO_TYPE = 5,
+  AM_OMX_BUFFER_SEQUENCE = 6,
 }

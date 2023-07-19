@@ -1,6 +1,5 @@
-
 /*
- * Copyright (C) 2020, 2022 Arm Limited.
+ * Copyright (C) 2020, 2022-2023 Arm Limited.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,27 +16,47 @@
  */
 
 cc_defaults {
-	name: "arm_gralloc_common_defaults",
-	defaults: ["arm_gralloc_build_defaults"],
-	shared_libs: ["libbase"],
-	cflags: [
-		"-DGRALLOC_USE_PRIVATE_FORMATS=@USE_PRIVATE_FORMATS@",
-	],
+    name: "arm_gralloc_common_defaults",
+    defaults: ["arm_gralloc_build_defaults"],
+    shared_libs: ["libbase"],
+    cflags: [
+        "-DGRALLOC_USE_PRIVATE_FORMATS=@USE_PRIVATE_FORMATS@",
+    ],
+}
+
+cc_defaults {
+    name: "arm_gralloc_version_defaults",
+    defaults: [
+        "arm_gralloc_mapper_version_defaults",
+        "arm_gralloc_allocator_version_defaults",
+    ],
+    shared_libs: [
+        "android.hardware.graphics.common@1.2",
+    ],
 }
 
 cc_library_headers {
-	name: "libgralloc_headers",
-	vendor: true,
-	host_supported: true,
-	export_include_dirs: [
-		".",
-		"./include",
-	],
-	header_libs: [
-		"libsystem_headers",
-		"libbase_headers",
-	],
-	export_header_lib_headers: [
-		"libsystem_headers",
-	],
+    name: "libgralloc_headers",
+    vendor: true,
+    host_supported: true,
+    export_include_dirs: [
+        "./include",
+        "./idl_common/gralloc_shared/include",
+    ],
+    header_libs: [
+        "libsystem_headers",
+        "libbase_headers",
+    ],
+    export_header_lib_headers: [
+        "libsystem_headers",
+    ],
+}
+
+cc_library_headers {
+    name: "libgralloc_headers_internal",
+    vendor: true,
+    host_supported: true,
+    export_include_dirs: [
+        ".",
+    ],
 }

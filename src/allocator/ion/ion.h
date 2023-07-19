@@ -46,7 +46,7 @@ struct uvm_exec_data {
 #define UVM_FAKE_ALLOC       (1 << 2)
 #define UVM_USAGE_PROTECTED  (1 << 3)
 #define UVM_SKIP_REALLOC     (1 << 4)
-#define	UVM_SIZE_SKIP        (1 << 7)
+#define UVM_SIZE_SKIP        (1 << 7)
 
 #define UVM_IOC_MAGIC 'U'
 #define UVM_IOC_ALLOC _IOWR(UVM_IOC_MAGIC, 0, \

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Arm Limited. All rights reserved.
+ * Copyright (C) 2022-2023 Arm Limited. All rights reserved.
  *
  * Copyright (C) 2008 The Android Open Source Project
  *
@@ -20,6 +20,7 @@
 #include <inttypes.h>
 #include <BufferAllocator/BufferAllocator.h>
 #include <android-base/unique_fd.h>
+#include <algorithm>
 
 #include "allocator/allocator.h"
 #include "core/buffer_allocation.h"
@@ -100,8 +101,7 @@ struct custom_heap
 	{
 		const char *name;
 		int flags;
-	}
-	ion_fallback;
+	} ion_fallback;
 };
 
 const custom_heap physically_contiguous_gfx_heap =
@@ -206,14 +206,14 @@ static BufferAllocator *get_global_buffer_allocator()
 				allocator.MapNameToIonHeap(heap.name, heap.ion_fallback.name, heap.ion_fallback.flags);
 			}
 		}
-	}
-	instance;
+	} instance;
 
 	return &instance.allocator;
 }
 
-int allocator_allocate(const buffer_descriptor_t *descriptor, private_handle_t **out_handle)
+unique_private_handle allocator_allocate(const buffer_descriptor_t *descriptor)
 {
+	unique_private_handle private_handle = nullptr;
 	unsigned int priv_buffer_flag = 0;
 	auto allocator = get_global_buffer_allocator();
 
@@ -232,7 +232,7 @@ int allocator_allocate(const buffer_descriptor_t *descriptor, private_handle_t *
 		if (agu->uvm_buffer_flag) {
 			MALI_GRALLOC_LOGE("Failed to allocate from codec_mm!");
 			free(agu);
-			return -ENOMEM;
+			return nullptr;
 		}
 
 		shared_fd = allocator->Alloc(heap_name, descriptor->size);
@@ -248,7 +248,7 @@ int allocator_allocate(const buffer_descriptor_t *descriptor, private_handle_t *
 		{
 			MALI_GRALLOC_LOGE("libdmabufheap allocation failed for %s heap", heap_name);
 			free(agu);
-			return -ENOMEM;
+			return nullptr;
 		}
 		else
 		{
@@ -260,7 +260,7 @@ int allocator_allocate(const buffer_descriptor_t *descriptor, private_handle_t *
 			{
 				MALI_GRALLOC_LOGE("libdmabufheap fallback allocation failed");
 				free(agu);
-				return -ENOMEM;
+				return nullptr;
 			}
 		}
 	}
@@ -287,49 +287,33 @@ int allocator_allocate(const buffer_descriptor_t *descriptor, private_handle_t *
 	}
 
 	android::base::unique_fd fd(shared_fd);
-	*out_handle = make_private_handle(
+	private_handle = make_private_handle(
 	    agu->uvm_buffer_flag | priv_buffer_flag, descriptor->size,
 	    descriptor->consumer_usage, descriptor->producer_usage, std::move(fd), descriptor->hal_format,
-	    descriptor->alloc_format, descriptor->width, descriptor->height, descriptor->size, descriptor->layer_count,
+	    descriptor->alloc_format, descriptor->width, descriptor->height, descriptor->layer_count,
 	    descriptor->plane_info, descriptor->pixel_stride);
-	AML_GRALLOC_LOGI("%s: handle:%p heap_name:%s width:%d height:%d stride:%d format=0x%" PRIx64 " usage=0x%" PRIx64,
-			__FUNCTION__, *out_handle, heap_name, descriptor->width, descriptor->height, descriptor->pixel_stride,
+	AML_GRALLOC_LOGI("%s: heap_name:%s width:%d height:%d stride:%d format=0x%" PRIx64 " usage=0x%" PRIx64,
+			__FUNCTION__, heap_name, descriptor->width, descriptor->height, descriptor->pixel_stride,
 			descriptor->hal_format, usage);
 
-	if (nullptr == *out_handle)
+	if (nullptr == private_handle)
 	{
 		MALI_GRALLOC_LOGE("Private handle could not be created for descriptor");
 		free(agu);
-		return -ENOMEM;
+		return nullptr;
 	}
 
-	(*out_handle)->ion_delay_alloc = agu->delay_alloc;
-	(*out_handle)->am_extend_fd = ::dup((*out_handle)->share_fd);
-	(*out_handle)->am_extend_type = 0;
-	(*out_handle)->req_width = descriptor->width;
-	(*out_handle)->req_height = descriptor->height;
-	(*out_handle)->format = descriptor->hal_format;
-	(*out_handle)->usage = usage;
+	private_handle->ion_delay_alloc = agu->delay_alloc;
+	private_handle->am_extend_fd = ::dup(private_handle->share_fd);
+	private_handle->am_extend_type = 0;
+	private_handle->req_width = descriptor->width;
+	private_handle->req_height = descriptor->height;
+	private_handle->format = descriptor->hal_format;
+	private_handle->usage = usage;
 
 	free(agu);
 
-	return 0;
-}
-
-void allocator_free(private_handle_t *handle)
-{
-	if (handle == nullptr)
-	{
-		return;
-	}
-
-	if (handle->base != nullptr)
-	{
-		munmap(handle->base, handle->size);
-	}
-
-	close(handle->share_fd);
-	handle->share_fd = -1;
+	return private_handle;
 }
 
 static SyncType make_sync_type(bool read, bool write)
@@ -352,19 +336,19 @@ static SyncType make_sync_type(bool read, bool write)
 	}
 }
 
-int allocator_sync_start(const private_handle_t *handle, bool read, bool write)
+int allocator_sync_start(const imported_handle *handle, bool read, bool write)
 {
 	auto allocator = get_global_buffer_allocator();
 	return allocator->CpuSyncStart(static_cast<unsigned>(handle->share_fd), make_sync_type(read, write));
 }
 
-int allocator_sync_end(const private_handle_t *handle, bool read, bool write)
+int allocator_sync_end(const imported_handle *handle, bool read, bool write)
 {
 	auto allocator = get_global_buffer_allocator();
 	return allocator->CpuSyncEnd(static_cast<unsigned>(handle->share_fd), make_sync_type(read, write));
 }
 
-int allocator_map(private_handle_t *handle)
+int allocator_map(imported_handle *handle)
 {
 	void *hint = nullptr;
 	int protection = PROT_READ | PROT_WRITE, flags = MAP_SHARED;
@@ -397,7 +381,7 @@ int allocator_map(private_handle_t *handle)
 	return 0;
 }
 
-void allocator_unmap(private_handle_t *handle)
+void allocator_unmap(imported_handle *handle)
 {
 	void *base = static_cast<std::byte *>(handle->base);
 	uint64_t usage = handle->producer_usage | handle->consumer_usage;
@@ -421,6 +405,21 @@ void allocator_unmap(private_handle_t *handle)
 	handle->base = nullptr;
 	handle->cpu_write = false;
 	handle->lock_count = 0;
+}
+
+static bool allocator_has_protected_heap(const buffer_descriptor_t *grallocDescriptor)
+{
+	auto allocator = get_global_buffer_allocator();
+	auto protected_heap = am_gralloc_pick_dma_buf_heap(grallocDescriptor, GRALLOC_USAGE_PROTECTED);
+	auto protected_heap_name = get_dma_buf_heap_name(protected_heap);
+	auto heap_list = allocator->GetDmabufHeapList();
+	return std::find(heap_list.begin(), heap_list.end(), std::string(protected_heap_name)) != heap_list.end();
+}
+
+bool allocator_supports_protected_memory(const buffer_descriptor_t *grallocDescriptor)
+{
+	static auto protected_heap_supported = allocator_has_protected_heap(grallocDescriptor);
+	return protected_heap_supported;
 }
 
 void allocator_close()
@@ -584,7 +583,7 @@ static int am_gralloc_exec_uvm_policy(
 				__func__, uvm_fd);
 			return ret;
 		}
-		MALI_GRALLOC_LOGI("%s: alloc from UVM success. fd = %d, flags = 0x%x, scalar = %d, scaled_buf_size = %d",
+		AML_GRALLOC_LOGI("%s: alloc from UVM success. fd = %d, flags = 0x%x, scalar = %d, scaled_buf_size = %d",
 			__func__, uad.fd, agu->uvm_flag, buf_scalar, v4l2_dec_max_buf_size);
 		return uad.fd;
 	}

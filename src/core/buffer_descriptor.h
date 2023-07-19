@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2022 Arm Limited. All rights reserved.
+ * Copyright (C) 2016-2023 Arm Limited. All rights reserved.
  *
  * Copyright (C) 2008 The Android Open Source Project
  *
@@ -23,6 +23,17 @@
 #include "buffer.h"
 #include "internal_format.h"
 
+#define MAX_NAME_LENGTH 127
+#define NAME_BUFFER_SIZE 128
+
+/* Flags to describe additional buffer descriptor information */
+enum buffer_descriptor_flags : uint32_t
+{
+	GPU_DATA_BUFFER_WITH_ANY_FORMAT = 1,
+	USE_AIDL_FRONTBUFFER_USAGE = 1 << 1,
+	SUPPORTS_R8 = 1 << 2,
+};
+
 /* A buffer_descriptor contains the requested parameters for the buffer
  * as well as the calculated parameters that are passed to the allocator.
  */
@@ -38,7 +49,7 @@ struct buffer_descriptor_t
 	uint64_t consumer_usage{};
 	uint64_t hal_format{};
 	uint32_t layer_count{};
-	std::string name{"Unnamed"};
+	std::array<unsigned char, NAME_BUFFER_SIZE> name{};
 	uint64_t reserved_size{};
 
 	/*
@@ -49,4 +60,6 @@ struct buffer_descriptor_t
 	int pixel_stride{};
 	internal_format_t alloc_format{};
 	plane_layout plane_info{};
+
+	std::underlying_type_t<buffer_descriptor_flags> flags{};
 };

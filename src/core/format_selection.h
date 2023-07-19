@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Arm Limited. All rights reserved.
+ * Copyright (C) 2022-2023 Arm Limited. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,8 @@
 
 #include "gralloc/formats.h"
 #include "internal_format.h"
+#include "buffer_descriptor.h"
 
 void mali_gralloc_adjust_dimensions(internal_format_t format, uint64_t usage, int *width, int *height);
 
-internal_format_t mali_gralloc_select_format(mali_gralloc_android_format req_format, uint64_t usage);
+internal_format_t mali_gralloc_select_format(const buffer_descriptor_t &descriptor, uint64_t usage);

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2021 Arm Limited. All rights reserved.
+ * Copyright (C) 2020-2023 Arm Limited. All rights reserved.
  *
  * Copyright (C) 2008 The Android Open Source Project
  *
@@ -21,20 +21,10 @@
 #include <stdint.h>
 #include <utility>
 
-/*
- * Returns [file descriptor of open file, address of mmap file]
- * on success or [-1, MAP_FAILED] on failure with errno set.
- *
- * When successful, the file descriptor will need to be freed with
- * close() and the mapping will need to be freed with munmap().
- * gralloc_shared_memory_free does both at once.
- *
- * The function fails if either open or mmap fails and no cleanup
- * will be necessary.
- */
-std::pair<int, void *> gralloc_shared_memory_allocate(const char *name, uint64_t size);
+#include <android-base/unique_fd.h>
 
 /*
- * Frees resources acquired from gralloc_shared_memory_allocate.
+ * Allocates a shared memory file of the given size.
+ * Returns -1 on failure.
  */
-void gralloc_shared_memory_free(int fd, void *mapping, uint64_t size);
+android::base::unique_fd gralloc_shared_memory_allocate(const char *name, off_t size);

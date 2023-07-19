@@ -594,7 +594,7 @@ int ion_device::open_and_query_ion()
  * @return              0 in case of success
  *                      errno for all error cases
  */
-int allocator_sync_start(const private_handle_t * const hnd,
+int allocator_sync_start(const imported_handle * const hnd,
 						 const bool read, const bool write)
 {
 	if (hnd == NULL)
@@ -668,7 +668,7 @@ int allocator_sync_start(const private_handle_t * const hnd,
  * @return              0 in case of success
  *                      errno for all error cases
  */
-int allocator_sync_end(const private_handle_t * const hnd,
+int allocator_sync_end(const imported_handle * const hnd,
 					   const bool read,
 					   const bool write)
 {
@@ -732,25 +732,6 @@ int allocator_sync_end(const private_handle_t * const hnd,
 	return 0;
 }
 
-
-void allocator_free(private_handle_t * const hnd)
-{
-	if (hnd->flags & private_handle_t::PRIV_FLAGS_USES_ION)
-	{
-		/* Buffer might be unregistered already so we need to assure we have a valid handle */
-		if (hnd->base != 0)
-		{
-			if (munmap((void *)hnd->base, hnd->size) != 0)
-			{
-				MALI_GRALLOC_LOGE("Failed to munmap handle %p", hnd);
-			}
-		}
-
-		close(hnd->share_fd);
-		hnd->share_fd = -1;
-	}
-}
-
 /*
  *  Allocates ION buffers
  *
@@ -762,8 +743,9 @@ void allocator_free(private_handle_t * const hnd)
  * @return File handle which can be used for allocation, on success
  *         -1, otherwise.
  */
-int allocator_allocate(const buffer_descriptor_t *descriptor, private_handle_t **out_handle)
+unique_private_handle allocator_allocate(const buffer_descriptor_t *descriptor)
 {
+	unique_private_handle private_handle = nullptr;
 	unsigned int priv_heap_flag = 0;
 	enum ion_heap_type heap_type;
 	unsigned char *cpu_ptr = NULL;
@@ -783,7 +765,7 @@ int allocator_allocate(const buffer_descriptor_t *descriptor, private_handle_t *
 		MALI_GRALLOC_LOGE("Failed to get ion_device!");
 		free(agu);
 #endif
-		return -1;
+		return nullptr;
 	}
 
 	usage = descriptor->consumer_usage | descriptor->producer_usage;
@@ -799,7 +781,7 @@ int allocator_allocate(const buffer_descriptor_t *descriptor, private_handle_t *
 
 	if (heap_type == ION_HEAP_TYPE_INVALID)
 	{
-		return false;
+		return nullptr;
 	}
 
 //meson graphics changes start
@@ -813,7 +795,7 @@ int allocator_allocate(const buffer_descriptor_t *descriptor, private_handle_t *
 		if (agu->uvm_buffer_flag) {
 			MALI_GRALLOC_LOGE("Failed to allocate from codec_mm!");
 			free(agu);
-			return -1;
+			return nullptr;
 		}
 		shared_fd = dev->alloc_from_ion_heap(usage, descriptor->size, &heap_type, ion_flags, &min_pgsz);
 		agu->delay_alloc = 0;
@@ -831,20 +813,20 @@ int allocator_allocate(const buffer_descriptor_t *descriptor, private_handle_t *
 	{
 		MALI_GRALLOC_LOGE("ion_alloc failed form client: ( %d )", dev->client());
 		free(agu);
-		return -1;
+		return nullptr;
 	}
 
 	android::base::unique_fd fd(shared_fd);
-	private_handle_t *handle = make_private_handle(
+	private_handle = make_private_handle(
 		private_handle_t::PRIV_FLAGS_USES_ION | priv_heap_flag | agu->uvm_buffer_flag, descriptor->size,
 		descriptor->consumer_usage, descriptor->producer_usage, std::move(fd), descriptor->hal_format, descriptor->alloc_format,
-		descriptor->width, descriptor->height, descriptor->size, descriptor->layer_count,
+		descriptor->width, descriptor->height, descriptor->layer_count,
 		descriptor->plane_info, descriptor->pixel_stride);
 	AML_GRALLOC_LOGI("%s: handle:%p width:%d height:%d stride:%d format=0x%" PRIx64 " usage=0x%" PRIx64,
 		    __FUNCTION__, handle, descriptor->width, descriptor->height, descriptor->pixel_stride,
 		    descriptor->hal_format, usage);
 
-	if (NULL == handle)
+	if (NULL == private_handle)
 	{
 		MALI_GRALLOC_LOGE("[%s] Private handle create failed! w*h(%d*%d) stride:%d format=0x%" PRIx64 " usage=0x%" PRIx64,
 			__FUNCTION__, descriptor->width, descriptor->height, descriptor->pixel_stride, descriptor->hal_format, usage);
@@ -852,28 +834,26 @@ int allocator_allocate(const buffer_descriptor_t *descriptor, private_handle_t *
 		/* Close the obtained shared file descriptor for the current handle */
 		close(shared_fd);
 
-		allocator_free(handle);
 		free(agu);
-		return -1;
+		return nullptr;
 	}
 
-	handle->req_width = descriptor->width;
-	handle->req_height = descriptor->height;
-	handle->format = descriptor->hal_format;
-	handle->usage = usage;
+	private_handle->req_width = descriptor->width;
+	private_handle->req_height = descriptor->height;
+	private_handle->format = descriptor->hal_format;
+	private_handle->usage = usage;
 
 #ifdef GRALLOC_AML_EXTEND
-	handle->ion_delay_alloc = agu->delay_alloc;
-	handle->am_extend_fd = ::dup(handle->share_fd);
-	handle->am_extend_type = 0;
+	private_handle->ion_delay_alloc = agu->delay_alloc;
+	private_handle->am_extend_fd = ::dup(handle->share_fd);
+	private_handle->am_extend_type = 0;
 	free(agu);
 #endif
-	*out_handle = handle;
 
-	return 0;
+	return private_handle;
 }
 
-int allocator_map(private_handle_t *handle)
+int allocator_map(imported_handle *handle)
 {
 	int retval = -EINVAL;
 
@@ -926,7 +906,7 @@ int allocator_map(private_handle_t *handle)
 	return retval;
 }
 
-void allocator_unmap(private_handle_t *handle)
+void allocator_unmap(imported_handle *handle)
 {
 	switch (handle->flags & private_handle_t::PRIV_FLAGS_USES_ION)
 	{
@@ -970,6 +950,36 @@ void allocator_unmap(private_handle_t *handle)
 #endif
 		break;
 	}
+}
+
+static bool allocator_has_protected_heap(const buffer_descriptor_t *grallocDescriptor)
+{
+	int cnt = 0;
+	ion_device *dev = ion_device::get();
+	auto protected_heap = am_gralloc_pick_ion_heap(grallocDescriptor, GRALLOC_USAGE_PROTECTED);
+	std::vector<struct ion_heap_data> heap_data(cnt);
+
+	int ret = ion_query_heap_cnt(dev->client(), &cnt);
+	if (ret == 0)
+	{
+		if (cnt > (int)ION_NUM_HEAP_IDS)
+		{
+			MALI_GRALLOC_LOGE("%s: Retrieved heap count %d is more than maximun heaps %zu on ion",
+				  __FUNCTION__, cnt, ION_NUM_HEAP_IDS);
+			return -1;
+		}
+
+		ret = ion_query_get_heaps(dev->client(), cnt, heap_data.data());
+	}
+
+	return std::find_if(heap_data.begin(), heap_data.end(),
+		[protected_heap](struct ion_heap_data heap_data){ return heap_data.type == protected_heap;}) != heap_list.end();
+}
+
+bool allocator_supports_protected_memory(const buffer_descriptor_t *grallocDescriptor)
+{
+	static auto protected_heap_supported = allocator_has_protected_heap(grallocDescriptor);
+	return protected_heap_supported;
 }
 
 void allocator_close(void)

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Arm Limited. All rights reserved.
+ * Copyright (C) 2022-2023 Arm Limited. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,7 +25,8 @@
 #include <sstream>
 
 #include "gralloc/formats.h"
-#include "format_info.h"
+
+struct format_info_t;
 
 /**
  * @brief Coding size to be used for AFRC compression formats.
@@ -35,6 +36,16 @@ enum class afrc_coding_unit_size_t : mali_gralloc_internal_format
 	bytes_16 = MALI_GRALLOC_INTFMT_AFRC_CODING_UNIT_BYTES_16,
 	bytes_24 = MALI_GRALLOC_INTFMT_AFRC_CODING_UNIT_BYTES_24,
 	bytes_32 = MALI_GRALLOC_INTFMT_AFRC_CODING_UNIT_BYTES_32
+};
+
+enum class mali_gralloc_format_data_type : uint32_t
+{
+	UNORM = 0,
+	SNORM = 1,
+	UINT = 2,
+	SINT = 3,
+	SFLOAT = 4,
+	UNKNOWN = 0xFF,
 };
 
 /**
@@ -79,13 +90,17 @@ public:
 	 *
 	 * @param android_format An Android PixelFormat. This is one of the formats defined in the Android
 	 *   framework or a format in the vendor-reserved space 0x100 - 0x1ff.
+	 * @param data_type The format data type. This is one of the mali_gralloc_format_data_type enum
+	 *   values.
 	 *
 	 * @return An internal format with no modifiers, i.e. for which the method has_modifiers() returns
 	 *   @c false. If @p android_format is invalid, this function returns @c internal_format_t::invalid
 	 */
-	static internal_format_t from_android(mali_gralloc_android_format android_format)
+	static internal_format_t from_android(
+	    mali_gralloc_android_format android_format,
+	    mali_gralloc_format_data_type data_type = mali_gralloc_format_data_type::UNORM)
 	{
-		auto ret = internal_format_t(android_format);
+		auto ret = internal_format_t(android_format, data_type);
 		CHECK(!ret.has_modifiers()) << "invalid format: " << std::showbase << std::hex << android_format;
 		return ret;
 	}
@@ -99,40 +114,23 @@ public:
 	 *   select a precise format supported by the GPU. This is intended to be used for testing.
 	 *
 	 * @param private_format A private format. This is a format generated using macros in formats.h like
-	 *   @c GRALLOC_PRIVATE_FORMAT_WRAPPER
+	 *   @c GRALLOC_PRIVATE_FORMAT_WRAPPER*
 	 *
 	 * @return An internal format with the modifiers set as encoded in the private format.
 	 *   If @p private_format is invalid this function returns @c internal_format_t::invalid
 	 */
-	static internal_format_t from_private(mali_gralloc_android_format private_format)
-	{
-		/* Clean the sentinel bit as it has no purpose after this point. */
-		auto fmt = (static_cast<mali_gralloc_internal_format>(private_format) &
-		            ~static_cast<mali_gralloc_internal_format>(MALI_GRALLOC_INTFMT_SENTINEL));
-		return internal_format_t(fmt);
-	}
+	static internal_format_t from_private(mali_gralloc_android_format private_format);
 
 	/**
 	 * @brief Construct an invalid format.
 	 */
 	constexpr internal_format_t() = default;
 
-	mali_gralloc_android_format get_base() const
-	{
-		return mali_gralloc_format_get_base(m_format);
-	}
+	mali_gralloc_android_format get_base() const;
 
-	const format_info_t *get_base_info() const
-	{
-		return get_format_info(get_base());
-	}
+	const format_info_t *get_base_info() const;
 
-	const format_info_t &base_info() const
-	{
-		auto *ret = get_base_info();
-		CHECK(ret != nullptr) << "Attempted access to base info for invalid format";
-		return *ret;
-	}
+	const format_info_t &base_info() const;
 
 	/**
 	 * @brief Get the modifiers as defined in gralloc/format.h
@@ -158,11 +156,6 @@ public:
 	void clear_modifiers()
 	{
 		m_modifiers = 0;
-	}
-
-	mali_gralloc_internal_format get_value() const
-	{
-		return m_format | m_modifiers;
 	}
 
 	bool is_undefined() const
@@ -340,13 +333,27 @@ public:
 
 	bool is_equal(internal_format_t other) const
 	{
-		return other.m_format == m_format && other.m_modifiers == m_modifiers;
+		return other.m_format == m_format && other.m_modifiers == m_modifiers &&
+		       other.format_data_type == format_data_type;
+	}
+
+	mali_gralloc_format_data_type get_format_data_type() const
+	{
+		return format_data_type;
+	}
+
+	mali_gralloc_internal_format get_format() const
+	{
+		return m_format;
 	}
 
 private:
-	explicit internal_format_t(mali_gralloc_internal_format value)
-		: m_format(mali_gralloc_format_get_base(value))
-		, m_modifiers(mali_gralloc_format_get_modifiers(value)) { }
+	explicit internal_format_t(mali_gralloc_internal_format value, mali_gralloc_format_data_type in_format_data_type)
+	    : format_data_type(in_format_data_type)
+	    , m_format(mali_gralloc_format_get_base(value))
+	    , m_modifiers(mali_gralloc_format_get_modifiers(value))
+	{
+	}
 
 	void set_modifier(mali_gralloc_internal_format flag, bool value)
 	{
@@ -367,6 +374,7 @@ private:
 
 	friend std::ostream& operator<<(std::ostream& os, const internal_format_t format);
 
+	mali_gralloc_format_data_type format_data_type{};
 	mali_gralloc_internal_format m_format = MALI_GRALLOC_FORMAT_INTERNAL_UNDEFINED;
 	mali_gralloc_internal_format m_modifiers = 0;
 };
@@ -376,7 +384,7 @@ inline constexpr internal_format_t internal_format_t::invalid = internal_format_
 inline std::ostream& operator<<(std::ostream& os, internal_format_t format)
 {
 	auto flags = os.flags();
-	os << std::showbase << std::hex << format.get_value();
+	os << std::showbase << std::hex << "FMT:" << format.m_format << ",MOD:" << format.m_modifiers;
 	os.flags(flags);
 	return os;
 }
@@ -394,7 +402,7 @@ inline bool operator!=(internal_format_t left, internal_format_t right)
 /* Ensure internal_format_t size and alignment are ABI independent.
  * This is important as internal_format_t is a member of private_handle_t.
  */
-static_assert(sizeof(internal_format_t) == 8,
-	"internal_format_t should have the same size on all ABIs (32-bit and 64-bit)");
+static_assert(sizeof(internal_format_t) == 12,
+              "internal_format_t should have the same size on all ABIs (32-bit and 64-bit)");
 static_assert(alignof(internal_format_t) == 4,
 	"internal_format_t should have the same alignment on all ABIs (32-bit and 64-bit)");

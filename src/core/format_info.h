@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2022 ARM Limited. All rights reserved.
+ * Copyright (C) 2018-2023 ARM Limited. All rights reserved.
  *
  * Copyright (C) 2008 The Android Open Source Project
  *
@@ -41,13 +41,14 @@ typedef struct
 	uint16_t height;
 } rect_t;
 
-/*
+/* clang-format: off */
+/**
  * Pixel format information.
  *
  * These properties are used by gralloc for buffer allocation.
  * Each format is uniquely identified with 'id'.
  */
-typedef struct
+struct format_info_t
 {
 	uint32_t id;                    /* Format ID. */
 	uint8_t npln;                   /* Number of planes. */
@@ -71,6 +72,7 @@ typedef struct
 	bool flex;                      /* Linear version of format can be represented as flex. */
 	bool block_linear;              /* Format supports 16x16 Block Linear layout */
 	bool afrc;                      /* AFRC supported (per specification and by gralloc). IP support not considered. */
+	uint64_t permitted_usage;       /* Buffer usage mask*/
 
 	/* Computes the total number of components in the format. */
 	int total_components() const
@@ -82,7 +84,8 @@ typedef struct
 		}
 		return sum;
 	}
-} format_info_t;
+};
+/* clang-format: on */
 
 /* Returns true if the formats are the same or if they only differ with respect to the order of components.
 	False otherwise. */
@@ -91,7 +94,6 @@ static inline bool is_same_or_components_reordered(const format_info_t &x, const
 	return x.npln == y.npln && x.total_components() == y.total_components() && x.bps == y.bps && x.is_yuv == y.is_yuv &&
 	       x.hsub == y.hsub && x.vsub == y.vsub;
 }
-
 
 typedef struct
 {
@@ -121,5 +123,4 @@ void get_format_dataspace(const format_info_t *info,
                           uint64_t usage,
                           int width,
                           int height,
-                          android_dataspace_t *dataspace,
-                          mali_gralloc_yuv_info *yuv_info);
+                          android_dataspace_t *dataspace);

@@ -32,7 +32,7 @@ func hw_gralloc_aml_Defaults(ctx android.LoadHookContext) {
         p.Shared_libs = append(p.Shared_libs, "arm.graphics-V1-ndk")
     } else {
         if IntPlatformVndkVersion > 32 {
-            p.Shared_libs = append(p.Shared_libs, "arm.graphics-V3-ndk")
+            p.Shared_libs = append(p.Shared_libs, "arm.graphics-V4-ndk")
         } else {
             p.Shared_libs = append(p.Shared_libs, "arm.graphics-V1-ndk_platform")
         }

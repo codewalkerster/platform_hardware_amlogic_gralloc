@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 Arm Limited.
+ * Copyright (C) 2020, 2023 Arm Limited.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -33,4 +33,12 @@ enum ArmMetadataType {
      * android.hardware.graphics.common.StandardMetadataType::PLANE_LAYOUTS
      */
     PLANE_FDS = 1,
+
+    /**
+     * Can be used to get the format data type of a buffer.
+     * Format data type is a stable aidl arm.graphics.DataType.
+     * arm.graphics.DataType defines the different values which can be used.
+     * It is encoded into int64_t little endian byte stream.
+     */
+     FORMAT_DATA_TYPE = 2,
 }

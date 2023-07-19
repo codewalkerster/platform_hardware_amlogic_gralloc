@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Arm Limited. All rights reserved.
+ * Copyright (C) 2022-2023 Arm Limited. All rights reserved.
  *
  * Copyright (C) 2008 The Android Open Source Project
  *
@@ -128,7 +128,7 @@ static dma_buf_heap pick_dma_buf_heap(uint64_t usage)
 	}
 }
 
-int allocator_allocate(const buffer_descriptor_t *descriptor, private_handle_t **out_handle)
+unique_private_handle allocator_allocate(const buffer_descriptor_t *descriptor)
 {
 	auto allocator = get_global_buffer_allocator();
 
@@ -139,37 +139,14 @@ int allocator_allocate(const buffer_descriptor_t *descriptor, private_handle_t *
 	if (fd < 0)
 	{
 		MALI_GRALLOC_LOGE("libdmabufheap allocation failed for %s heap", heap_name);
-		return -ENOMEM;
+		return nullptr;
 	}
 
-	*out_handle = make_private_handle(
-	    0, descriptor->size,
+	return make_private_handle(
+	    descriptor->size,
 	    descriptor->consumer_usage, descriptor->producer_usage, std::move(fd), descriptor->hal_format,
-	    descriptor->alloc_format, descriptor->width, descriptor->height, descriptor->size, descriptor->layer_count,
+	    descriptor->alloc_format, descriptor->width, descriptor->height, descriptor->layer_count,
 	    descriptor->plane_info, descriptor->pixel_stride);
-	if (nullptr == *out_handle)
-	{
-		MALI_GRALLOC_LOGE("Private handle could not be created for descriptor");
-		return -ENOMEM;
-	}
-
-	return 0;
-}
-
-void allocator_free(private_handle_t *handle)
-{
-	if (handle == nullptr)
-	{
-		return;
-	}
-
-	if (handle->base != nullptr)
-	{
-		munmap(handle->base, handle->size);
-	}
-
-	close(handle->share_fd);
-	handle->share_fd = -1;
 }
 
 static SyncType make_sync_type(bool read, bool write)
@@ -192,19 +169,19 @@ static SyncType make_sync_type(bool read, bool write)
 	}
 }
 
-int allocator_sync_start(const private_handle_t *handle, bool read, bool write)
+int allocator_sync_start(const imported_handle *handle, bool read, bool write)
 {
 	auto allocator = get_global_buffer_allocator();
 	return allocator->CpuSyncStart(static_cast<unsigned>(handle->share_fd), make_sync_type(read, write));
 }
 
-int allocator_sync_end(const private_handle_t *handle, bool read, bool write)
+int allocator_sync_end(const imported_handle *handle, bool read, bool write)
 {
 	auto allocator = get_global_buffer_allocator();
 	return allocator->CpuSyncEnd(static_cast<unsigned>(handle->share_fd), make_sync_type(read, write));
 }
 
-int allocator_map(private_handle_t *handle)
+int allocator_map(imported_handle *handle)
 {
 	void *hint = nullptr;
 	int protection = PROT_READ | PROT_WRITE, flags = MAP_SHARED;
@@ -221,7 +198,7 @@ int allocator_map(private_handle_t *handle)
 	return 0;
 }
 
-void allocator_unmap(private_handle_t *handle)
+void allocator_unmap(imported_handle *handle)
 {
 	void *base = static_cast<std::byte *>(handle->base);
 	if (munmap(base, handle->size) < 0)
