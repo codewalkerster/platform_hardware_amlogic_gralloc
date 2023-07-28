@@ -164,7 +164,7 @@ void am_gralloc_set_buffer_flags(
 enum dma_buf_heap am_gralloc_pick_dma_buf_heap(
 					const buffer_descriptor_t *descriptor,
 					uint64_t usage);
-static int am_gralloc_exec_omx_policy(
+static int am_gralloc_exec_media_policy(
 					int size, int scalar,
 					const buffer_descriptor_t *descriptor);
 static int am_gralloc_exec_uvm_policy(
@@ -457,11 +457,11 @@ bool is_android_yuv_format(int req_format)
 	return rval;
 }
 
-static int am_gralloc_exec_omx_policy(
+static int am_gralloc_exec_media_policy(
 	int size, int scalar,
 	const buffer_descriptor_t *max_bufDescriptor) {
-
 	char prop[PROPERTY_VALUE_MAX];
+	int size_fixed_1080p = (GRALLOC_ALIGN(1920, 64) * GRALLOC_ALIGN(1080, 64)) * 3 / 2;
 
 	if (am_gralloc_is_video_decoder_replace_buffer_usage(
 			max_bufDescriptor->consumer_usage | max_bufDescriptor->producer_usage)) {
@@ -488,14 +488,13 @@ static int am_gralloc_exec_omx_policy(
 	 * workaround to alloc fixed 1080p buffer for 1/16 usage
 	 * if vendor.media.omx2.1080p_buffer is true
 	 */
-	if (scalar == 4 &&
-		property_get("vendor.media.omx2.1080p_buffer", prop, NULL) > 0) {
-		if (strstr(prop, "true")) {
-			int size_fixed_1080p = (GRALLOC_ALIGN(1920, 64) * GRALLOC_ALIGN(1080, 64)) * 3 / 2;
+	if (scalar == 4) {
+		if ((property_get("vendor.media.omx2.1080p_buffer", prop, NULL) > 0 && strstr(prop, "true")) ||
+			(property_get("vendor.media.common.fixed_buffer_slice", prop, NULL) > 0 && strstr(prop, "1080"))) {
 			if (size < size_fixed_1080p) {
 				size = size_fixed_1080p;
+				MALI_GRALLOC_LOGW("[gralloc]: allocate fixed 1080p buffer for 1/16 usage size:%d", size);
 			}
-			MALI_GRALLOC_LOGW("[gralloc]: allocate fixed 1080p  or max 8k size buffer for 1/16 usage size:%d", size);
 		}
 	}
 	return size;
@@ -560,8 +559,9 @@ static int am_gralloc_exec_uvm_policy(
 
 		if (need_do_width_height_align(usage, bufDescriptor->width, bufDescriptor->height))
 			aligned_bit = 64;
+
 		if (buf_scalar > 1) {
-			v4l2_dec_max_buf_size = am_gralloc_exec_omx_policy(
+			v4l2_dec_max_buf_size = am_gralloc_exec_media_policy(
 										v4l2_dec_max_buf_size,
 										buf_scalar,
 										bufDescriptor);
@@ -569,6 +569,7 @@ static int am_gralloc_exec_uvm_policy(
 		else
 			v4l2_dec_max_buf_size = (int)bufDescriptor->size;
 		agu->uvm_flag |= UVM_SIZE_SKIP;
+
 		struct uvm_alloc_data uad = {
 			.size = (int)bufDescriptor->size,
 			.byte_stride = (int)bufDescriptor->plane_info[0].byte_stride,
