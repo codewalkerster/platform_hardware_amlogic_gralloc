@@ -447,16 +447,9 @@ static bool isSupportedDataSpace(Dataspace dataspace)
 	case HAL_DATASPACE_STANDARD_BT601_525:
 	case HAL_DATASPACE_STANDARD_BT709:
 	case HAL_DATASPACE_STANDARD_BT2020:
-		return true;
+	case HAL_DATASPACE_STANDARD_DCI_P3:
 	case HAL_DATASPACE_UNKNOWN:
-		switch (static_cast<android_dataspace_t>(dataspace) & 0xffff)
-		{
-		case HAL_DATASPACE_UNKNOWN:
-			return false;
-		default:
-			return true;
-		}
-		break;
+		return true;
 	default:
 		ALOGE("Unsupported dataspace standard (%" PRIu32 ")", standard);
 		return false;

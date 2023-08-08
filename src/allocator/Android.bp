@@ -117,6 +117,7 @@ cc_library_static {
     ],
     cflags: [
         "-DGRALLOC_AML_EXTEND=1",
+        "-DHEAP_SECURE_DONOT_FALLBACK=0",
     ],
     include_dirs: [
         "hardware/amlogic/gralloc/amlogic",
