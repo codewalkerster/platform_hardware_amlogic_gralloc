@@ -270,7 +270,7 @@ common::mapper_error decodeAmlInt32Value_HIDL(const void *data, size_t data_size
 	if (data_size != required_size)
 	{
 		MALI_GRALLOC_LOGE("%s:Invalid size found. data_size(%u) != required_size(%u)",
-			__FUNCTION__, data_size, required_size);
+			__FUNCTION__, static_cast<unsigned int>(data_size), static_cast<unsigned int>(required_size));
 		return common::mapper_error::BAD_VALUE;
 	}
 
