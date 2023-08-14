@@ -448,8 +448,16 @@ static bool isSupportedDataSpace(Dataspace dataspace)
 	case HAL_DATASPACE_STANDARD_BT709:
 	case HAL_DATASPACE_STANDARD_BT2020:
 	case HAL_DATASPACE_STANDARD_DCI_P3:
-	case HAL_DATASPACE_UNKNOWN:
 		return true;
+	case HAL_DATASPACE_UNKNOWN:
+		switch (static_cast<android_dataspace_t>(dataspace) & 0xffff)
+		{
+		case HAL_DATASPACE_UNKNOWN:
+			return false;
+		default:
+			return true;
+		}
+		break;
 	default:
 		ALOGE("Unsupported dataspace standard (%" PRIu32 ")", standard);
 		return false;
@@ -468,9 +476,16 @@ mapper_error set_metadata(const imported_handle *handle, const metadata_descript
 		case StandardMetadataType::DATASPACE:
 		{
 			Dataspace dataspace;
+			std::optional<Dataspace> curDataspace = std::nullopt;
+
 			err = decode_fn(data, data_size, &dataspace);
 			if (err == mapper_error::NONE)
 			{
+				get_dataspace(handle, &curDataspace);
+				if (curDataspace.has_value() && curDataspace.value() == dataspace)
+				{
+					break;
+				}
 				AML_GRALLOC_LOGI("%s DATASPACE:0x%08x", __FUNCTION__, dataspace);
 				//android::CallStack c(LOG_TAG);
 				if (!isSupportedDataSpace(dataspace))
