@@ -641,6 +641,10 @@ enum dma_buf_heap am_gralloc_pick_dma_buf_heap(
 {
 	if (usage & GRALLOC_USAGE_PROTECTED)
 	{
+		if (is_android_yuv_format(descriptor->hal_format))
+		{
+			return dma_buf_heap::physically_contiguous_codec_mm;
+		}
 		return dma_buf_heap::protected_memory;
 	}
 
