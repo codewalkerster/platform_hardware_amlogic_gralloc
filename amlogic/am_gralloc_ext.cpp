@@ -123,7 +123,7 @@ int am_gralloc_ext_set_ext_attr(const native_handle_t * hnd,
     int err = am_set_metadata(mapper, hnd, type, val);
     if (err != android::OK)
     {
-        ALOGE("Failed to set metadata");
+        ALOGV("Failed to set metadata");
         return GRALLOC1_ERROR_BAD_HANDLE;
     }
     return GRALLOC1_ERROR_NONE;

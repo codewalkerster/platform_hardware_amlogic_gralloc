@@ -107,7 +107,6 @@ mapper_error import_buffer(const native_handle_t *raw_handle, imported_handle **
 		MALI_GRALLOC_LOGE("%s: Invalid buffer handle to import", __FUNCTION__);
 		return mapper_error::BAD_BUFFER;
 	}
-
 	auto import_handle = make_imported_handle(private_handle);
 	if (import_handle == nullptr)
 	{
@@ -407,6 +406,23 @@ mapper_error set(const void *buffer, const metadata_descriptor &metadata, const 
                  metadata_decoder decoder)
 {
 	auto handle = handle_cast<imported_handle>(static_cast<buffer_handle_t>(buffer));
+	if (metadata.is_aml_metadata_type()) {
+		/* The buffer must have been allocated by Gralloc */
+		buffer_handle_t importHnd = RegisteredHandlePool::get_instance().get(buffer);
+		if (importHnd == nullptr)
+		{
+			MALI_GRALLOC_LOGV("%s fallback to check again", __FUNCTION__);
+			/* fallback to check if exists a bufhandle's fd is the same with input handle*/
+			importHnd = RegisteredHandlePool::get_instance().aml_get(buffer);
+			if (importHnd == nullptr)
+			{
+				AML_GRALLOC_LOGI("%s-> Buffer: %p has not been registered with Gralloc", __FUNCTION__, buffer);
+				return mapper_error::BAD_BUFFER;
+			}
+		}
+		handle = handle_cast<imported_handle>(importHnd);
+	}
+
 	if (handle == nullptr)
 	{
 		MALI_GRALLOC_LOGE("set: %p has not been imported", buffer);

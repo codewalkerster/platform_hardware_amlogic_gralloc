@@ -635,7 +635,7 @@ mapper_error set_metadata(const imported_handle *handle, const metadata_descript
 			amlMetadata{ GRALLOC_AML_METADATA_TYPE_NAME, metadata.m_value };
 		if (handle->attr_base == MAP_FAILED || handle->attr_base == nullptr)
 		{
-			MALI_GRALLOC_LOGW("%s: Buffer(%p) valid, may be not imported!", __FUNCTION__, handle);
+			MALI_GRALLOC_LOGW("%s: Buffer(%p) invalid, handle->attr_base:%p may be not imported!", __FUNCTION__, handle, handle->attr_base);
 			return mapper_error::BAD_BUFFER;
 		}
 		switch (metadata.get_aml_metadata_type_value())
