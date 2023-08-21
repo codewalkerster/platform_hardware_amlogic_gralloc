@@ -663,13 +663,6 @@ enum dma_buf_heap am_gralloc_pick_dma_buf_heap(
 			return dma_buf_heap::physically_contiguous_codec_mm_uncached;
 	}
 
-	if ((usage & GRALLOC_USAGE_SW_READ_MASK) == GRALLOC_USAGE_SW_READ_OFTEN ||
-		am_gralloc_is_omx_metadata_extend_usage(usage))
-	{
-		return dma_buf_heap::system;
-	}
-	else
-	{
 #if defined(GRALLOC_USE_CONTIGUOUS_DISPLAY_MEMORY) && GRALLOC_USE_CONTIGUOUS_DISPLAY_MEMORY
 		static unsigned int max_composer_buf_width = 0;
 		static unsigned int max_composer_buf_height = 0;
@@ -691,20 +684,30 @@ enum dma_buf_heap am_gralloc_pick_dma_buf_heap(
 				break;
 		}
 
-		if (usage & GRALLOC_USAGE_PRIVATE_13)
-			return dma_buf_heap::system_uncached;
-
 		if (usage & GRALLOC_USAGE_HW_COMPOSER)
 		{
 			if ( (descriptor->width <= max_composer_buf_width) &&
 				(descriptor->height <= max_composer_buf_height) &&
 				(!is_android_yuv_format(descriptor->hal_format)))
-				return dma_buf_heap::physically_contiguous_gfx;
+			{
+				if (usage & (GRALLOC_USAGE_SW_WRITE_MASK | GRALLOC_USAGE_SW_READ_MASK))
+					return dma_buf_heap::system;
+				else
+					return dma_buf_heap::physically_contiguous_gfx;
+			}
 		}
  #else
 			/*for compile warning.*/
 			descriptor;
 #endif
+
+	if ((usage & GRALLOC_USAGE_SW_READ_MASK) == GRALLOC_USAGE_SW_READ_OFTEN ||
+		am_gralloc_is_omx_metadata_extend_usage(usage))
+	{
+		return dma_buf_heap::system;
+	}
+	else
+	{
 		return dma_buf_heap::system_uncached;
 	}
 
