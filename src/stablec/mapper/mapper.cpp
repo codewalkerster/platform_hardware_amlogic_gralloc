@@ -47,17 +47,7 @@ using aidl::android::hardware::graphics::common::Rect;
 using aidl::android::hardware::graphics::common::Smpte2086;
 using aidl::arm::graphics::ArmMetadataType;
 using aidl::arm::graphics::AmlMetadataType;
-
-/**
- * @brief Mapper data that is passed to the encoder for storing
- *        all necessary information for data access and results
- */
-struct mapper_data
-{
-	void *out_data;
-	size_t out_data_size;
-	int32_t result;
-};
+using common::mapper_data;
 
 static AIMapper_Error mapper_error_to_stablec_error(common::mapper_error error)
 {

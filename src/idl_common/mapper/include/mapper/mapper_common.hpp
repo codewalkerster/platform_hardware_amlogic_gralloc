@@ -35,6 +35,16 @@ namespace mapper
 {
 namespace common
 {
+/**
+ * @brief Mapper data that is passed to the encoder for storing
+ *        all necessary information for data access and results
+ */
+struct mapper_data
+{
+	void *out_data;
+	size_t out_data_size;
+	int32_t result;
+};
 
 /**
  * Imports a raw buffer handle to create an imported buffer handle for use with

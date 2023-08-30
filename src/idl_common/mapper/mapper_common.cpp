@@ -475,6 +475,7 @@ static buffer_dump dump_buffer_helper(const private_handle_t *handle,
                                       const std::unordered_map<StandardMetadataType, metadata_encoder> &encoders)
 {
 	std::vector<metadata_dump> out;
+	const int max_required_size = 512;
 	for (const auto &it : metadata_descriptions)
 	{
 		if (!it.m_descriptor.is_standard_metadata_type())
@@ -494,11 +495,16 @@ static buffer_dump dump_buffer_helper(const private_handle_t *handle,
 			continue;
 		}
 
-		std::vector<uint8_t> data;
-		auto err = get_metadata(handle, it.m_descriptor, data, encoder->second);
+		std::vector<uint8_t> out_buffer(max_required_size + sizeof(mapper_data));
+		mapper_data *data = reinterpret_cast<mapper_data *>(out_buffer.data());
+		void *outData = reinterpret_cast<void *>(data + 1);
+		*data = { outData, max_required_size, 0 };
+
+		auto err = get_metadata(handle, it.m_descriptor, out_buffer, encoder->second);
 		if (err == mapper_error::NONE)
 		{
-			out.push_back({ it.m_descriptor, std::move(data) });
+			std::vector<uint8_t> meta_data((out_buffer.begin() + sizeof(mapper_data)), out_buffer.end());
+			out.push_back({ it.m_descriptor, std::move(meta_data) });
 		}
 	}
 	return buffer_dump{ std::move(out) };
