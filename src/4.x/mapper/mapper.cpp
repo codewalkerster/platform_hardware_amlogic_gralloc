@@ -539,7 +539,7 @@ static IMapper::BufferDump common_buffer_dump_to_hidl(const common::buffer_dump 
 Return<void> GrallocMapper::dumpBuffer(void *buffer, dumpBuffer_cb hidl_cb)
 {
 	common::buffer_dump buffer_dump;
-	auto err = common::dump_buffer(buffer, buffer_dump, standard_encoders);
+	auto err = common::dump_buffer(buffer, buffer_dump, standard_encoders, false);
 	auto hidl_err = mapper_err_to_hidl_err(err);
 
 	IMapper::BufferDump hidl_buf_dump{};
@@ -555,7 +555,7 @@ Return<void> GrallocMapper::dumpBuffer(void *buffer, dumpBuffer_cb hidl_cb)
 Return<void> GrallocMapper::dumpBuffers(dumpBuffers_cb hidl_cb)
 {
 	std::vector<common::buffer_dump> buffer_dumps;
-	auto err = common::dump_buffers(buffer_dumps, standard_encoders);
+	auto err = common::dump_buffers(buffer_dumps, standard_encoders, false);
 	auto hidl_err = mapper_err_to_hidl_err(err);
 
 	std::vector<IMapper::BufferDump> hidl_buffer_dumps;

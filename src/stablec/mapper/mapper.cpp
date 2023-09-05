@@ -466,7 +466,7 @@ AIMapper_Error GrallocMapperV5::dumpBuffer(buffer_handle_t _Nonnull bufferHandle
                                            void *_Null_unspecified context)
 {
 	common::buffer_dump buf_dump;
-	auto err = common::dump_buffer(bufferHandle, buf_dump, standard_handlers);
+	auto err = common::dump_buffer(bufferHandle, buf_dump, standard_handlers, true);
 	if (err != common::mapper_error::NONE)
 	{
 		return mapper_error_to_stablec_error(err);
@@ -486,7 +486,7 @@ AIMapper_Error GrallocMapperV5::dumpAllBuffers(AIMapper_BeginDumpBufferCallback 
                                                void *_Null_unspecified context)
 {
 	std::vector<common::buffer_dump> buf_dumps;
-	auto err = common::dump_buffers(buf_dumps, standard_handlers);
+	auto err = common::dump_buffers(buf_dumps, standard_handlers, true);
 	if (err != common::mapper_error::NONE)
 	{
 		return mapper_error_to_stablec_error(err);

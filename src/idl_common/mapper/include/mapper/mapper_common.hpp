@@ -204,7 +204,8 @@ const std::vector<metadata_type> &list_supported_metadata_types();
  *                                    resources.
  */
 mapper_error dump_buffer(const void *buffer, buffer_dump &out_buffer_dump,
-                         const std::unordered_map<StandardMetadataType, metadata_encoder> &encoders);
+                         const std::unordered_map<StandardMetadataType, metadata_encoder> &encoders,
+                         bool isMapperV5);
 
 /**
  * Dumps the metadata for all the buffers in the current process.
@@ -217,7 +218,8 @@ mapper_error dump_buffer(const void *buffer, buffer_dump &out_buffer_dump,
  *                                    resources.
  */
 mapper_error dump_buffers(std::vector<buffer_dump> &out_buffer_dumps,
-                          const std::unordered_map<StandardMetadataType, metadata_encoder> &encoders);
+                          const std::unordered_map<StandardMetadataType, metadata_encoder> &encoders,
+                          bool isMapperV5);
 
 /**
  * @brief Get the plane layouts from buffer handle

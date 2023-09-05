@@ -472,7 +472,8 @@ const std::vector<metadata_type> &list_supported_metadata_types()
 }
 
 static buffer_dump dump_buffer_helper(const private_handle_t *handle,
-                                      const std::unordered_map<StandardMetadataType, metadata_encoder> &encoders)
+                                      const std::unordered_map<StandardMetadataType, metadata_encoder> &encoders,
+                                      bool isMapperV5)
 {
 	std::vector<metadata_dump> out;
 	const int max_required_size = 512;
@@ -495,23 +496,38 @@ static buffer_dump dump_buffer_helper(const private_handle_t *handle,
 			continue;
 		}
 
-		std::vector<uint8_t> out_buffer(max_required_size + sizeof(mapper_data));
-		mapper_data *data = reinterpret_cast<mapper_data *>(out_buffer.data());
-		void *outData = reinterpret_cast<void *>(data + 1);
-		*data = { outData, max_required_size, 0 };
+		std::vector<uint8_t> out_buffer;
+		if (isMapperV5)
+		{
+			out_buffer.resize(max_required_size + sizeof(mapper_data));
+			mapper_data *data = reinterpret_cast<mapper_data *>(out_buffer.data());
+			void *outData = reinterpret_cast<void *>(data + 1);
+			*data = { outData, max_required_size, 0 };
+		}
 
 		auto err = get_metadata(handle, it.m_descriptor, out_buffer, encoder->second);
 		if (err == mapper_error::NONE)
 		{
-			std::vector<uint8_t> meta_data((out_buffer.begin() + sizeof(mapper_data)), out_buffer.end());
-			out.push_back({ it.m_descriptor, std::move(meta_data) });
+			if (isMapperV5)
+			{
+				if (out_buffer.size() > sizeof(mapper_data))
+				{
+					std::vector<uint8_t> meta_data((out_buffer.begin() + sizeof(mapper_data)), out_buffer.end());
+					out.push_back({ it.m_descriptor, std::move(meta_data) });
+				}
+			}
+			else
+			{
+				out.push_back({ it.m_descriptor, std::move(out_buffer) });
+			}
 		}
 	}
 	return buffer_dump{ std::move(out) };
 }
 
 mapper_error dump_buffer(const void *buffer, buffer_dump &out_buffer_dump,
-                         const std::unordered_map<StandardMetadataType, metadata_encoder> &encoders)
+						 const std::unordered_map<StandardMetadataType, metadata_encoder> &encoders,
+						 bool isMapperV5)
 {
 	/* Note: handles passed to dumpBuffer may be raw or imported. */
 	auto handle = handle_cast<private_handle_t>(static_cast<const native_handle *>(buffer));
@@ -521,15 +537,16 @@ mapper_error dump_buffer(const void *buffer, buffer_dump &out_buffer_dump,
 		return mapper_error::BAD_BUFFER;
 	}
 
-	out_buffer_dump = dump_buffer_helper(handle, encoders);
+	out_buffer_dump = dump_buffer_helper(handle, encoders, isMapperV5);
 	return mapper_error::NONE;
 }
 
 mapper_error dump_buffers(std::vector<buffer_dump> &out_buffer_dumps,
-                          const std::unordered_map<StandardMetadataType, metadata_encoder> &encoders)
+						  const std::unordered_map<StandardMetadataType, metadata_encoder> &encoders,
+						  bool isMapperV5)
 {
 	std::vector<buffer_dump> buffer_dumps;
-	RegisteredHandlePool::get_instance().for_each([&buffer_dumps, &encoders](buffer_handle_t buffer) {
+	RegisteredHandlePool::get_instance().for_each([&buffer_dumps, &encoders, &isMapperV5](buffer_handle_t buffer) {
 		auto handle = handle_cast<imported_handle>(buffer);
 		if (handle == nullptr)
 		{
@@ -537,7 +554,7 @@ mapper_error dump_buffers(std::vector<buffer_dump> &out_buffer_dumps,
 			return;
 		}
 
-		buffer_dump buffer_dump{ dump_buffer_helper(handle, encoders) };
+		buffer_dump buffer_dump{ dump_buffer_helper(handle, encoders, isMapperV5) };
 		buffer_dumps.push_back(std::move(buffer_dump));
 	});
 
