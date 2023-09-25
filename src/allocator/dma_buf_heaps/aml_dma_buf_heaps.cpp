@@ -246,6 +246,8 @@ unique_private_handle allocator_allocate(const buffer_descriptor_t *descriptor)
 #if HEAP_SECURE_DONOT_FALLBACK
 			heap == dma_buf_heap::protected_memory ||
 #endif
+			heap == dma_buf_heap::physically_contiguous_codec_mm ||
+			heap == dma_buf_heap::physically_contiguous_codec_mm_uncached ||
 			heap == dma_buf_heap::physically_contiguous_fb)
 		{
 			MALI_GRALLOC_LOGE("libdmabufheap allocation failed for %s heap", heap_name);

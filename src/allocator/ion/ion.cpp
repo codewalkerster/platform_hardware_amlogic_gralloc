@@ -354,6 +354,10 @@ int ion_device::alloc_from_ion_heap(uint64_t usage, size_t size,
 	 */
 	if (ret < 0)
 	{
+		if (heap_type == ION_HEAP_TYPE_CUSTOM) {
+			MALI_GRALLOC_LOGE("ION_HEAP_TYPE_CUSTOM alloc failed!\n");
+			return -1;
+		}
 		/* Don't allow falling back to system heap if secure was requested. */
 		if (heap_type == ION_HEAP_TYPE_SECURE)
 		{
