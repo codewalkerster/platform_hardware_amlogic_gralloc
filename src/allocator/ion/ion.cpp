@@ -43,7 +43,6 @@
 #include <hardware/hardware.h>
 #include <hardware/gralloc1.h>
 
-#include "private_interface_types.h"
 #include "buffer.h"
 #include "helper_functions.h"
 //#include "include/gralloc/formats.h"
@@ -751,9 +750,7 @@ unique_private_handle allocator_allocate(const buffer_descriptor_t *descriptor)
 	unique_private_handle private_handle = nullptr;
 	unsigned int priv_heap_flag = 0;
 	enum ion_heap_type heap_type;
-	unsigned char *cpu_ptr = NULL;
 	uint64_t usage;
-	uint32_t i, max_buffer_index = 0;
 	int shared_fd;
 	unsigned int ion_flags = 0;
 	int min_pgsz = 0;
@@ -826,7 +823,7 @@ unique_private_handle allocator_allocate(const buffer_descriptor_t *descriptor)
 		descriptor->width, descriptor->height, descriptor->layer_count,
 		descriptor->plane_info, descriptor->pixel_stride);
 	AML_GRALLOC_LOGI("%s: handle:%p width:%d height:%d stride:%d format=0x%" PRIx64 " usage=0x%" PRIx64,
-		    __FUNCTION__, handle, descriptor->width, descriptor->height, descriptor->pixel_stride,
+		    __FUNCTION__,private_handle.get(),descriptor->width, descriptor->height, descriptor->pixel_stride,
 		    descriptor->hal_format, usage);
 
 	if (NULL == private_handle)
@@ -848,7 +845,7 @@ unique_private_handle allocator_allocate(const buffer_descriptor_t *descriptor)
 
 #ifdef GRALLOC_AML_EXTEND
 	private_handle->ion_delay_alloc = agu->delay_alloc;
-	private_handle->am_extend_fd = ::dup(handle->share_fd);
+	private_handle->am_extend_fd = ::dup(private_handle->share_fd);
 	private_handle->am_extend_type = 0;
 	free(agu);
 #endif
@@ -976,7 +973,7 @@ static bool allocator_has_protected_heap(const buffer_descriptor_t *grallocDescr
 	}
 
 	return std::find_if(heap_data.begin(), heap_data.end(),
-		[protected_heap](struct ion_heap_data heap_data){ return heap_data.type == protected_heap;}) != heap_list.end();
+		[protected_heap](struct ion_heap_data heap_data){ return heap_data.type == protected_heap;}) != heap_data.end();
 }
 
 bool allocator_supports_protected_memory(const buffer_descriptor_t *grallocDescriptor)
