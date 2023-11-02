@@ -436,19 +436,32 @@ bool am_gralloc_is_uvm_dma_buffer(const native_handle_t *hnd) {
 
 typedef struct am_sideband_handle {
    native_handle_t base;
+   int fake_fd;
    unsigned int id;
    int flags;
    int channel;
 } am_sideband_handle_t;
 
 #define AM_SIDEBAND_HANDLE_NUM_INT (3)
-#define AM_SIDEBAND_HANDLE_NUM_FD (0)
+#define AM_SIDEBAND_HANDLE_NUM_FD (1)
 #define AM_SIDEBAND_IDENTIFIER (0xabcdcdef)
 
 native_handle_t * am_gralloc_create_sideband_handle(int type, int channel) {
-    am_sideband_handle_t * pHnd = (am_sideband_handle_t *)
-        native_handle_create(AM_SIDEBAND_HANDLE_NUM_FD,
+    int fake_fd = -1;
+
+    native_handle_t* handle = native_handle_create(
+        AM_SIDEBAND_HANDLE_NUM_FD,
         AM_SIDEBAND_HANDLE_NUM_INT);
+    if (!handle)
+        ALOGE("%s: native_handle_create fail", __FUNCTION__);
+
+    fake_fd = open("/dev/null", O_RDONLY | O_CLOEXEC);
+    if (fake_fd < 0)
+        ALOGE("%s: open /dev/null return fd:%d", __FUNCTION__, fake_fd);
+
+    handle->data[0] = fake_fd;
+
+    am_sideband_handle_t * pHnd = (am_sideband_handle_t *)handle;
     pHnd->id = AM_SIDEBAND_IDENTIFIER;
 
     if (type == AM_TV_SIDEBAND) {
@@ -460,13 +473,19 @@ native_handle_t * am_gralloc_create_sideband_handle(int type, int channel) {
     } else if (type == AM_FIXED_TUNNEL) {
         pHnd->flags = private_handle_t::PRIV_FLAGS_VIDEO_TUNNEL;
     }
+
     pHnd->channel = channel;
+    pHnd->fake_fd = fake_fd;
 
     return (native_handle_t *)pHnd;
 }
 
 int am_gralloc_destroy_sideband_handle(native_handle_t * hnd) {
     if (hnd) {
+        am_sideband_handle_t * pHnd = (am_sideband_handle_t *)hnd;
+        close(pHnd->fake_fd);
+        pHnd->fake_fd = -1;
+        native_handle_close(hnd);
         native_handle_delete(hnd);
     }
 
