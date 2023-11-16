@@ -442,7 +442,15 @@ typedef struct am_sideband_handle {
    int channel;
 } am_sideband_handle_t;
 
+typedef struct am_sideband_non_fd_handle {
+   native_handle_t base;
+   unsigned int id;
+   int flags;
+   int channel;
+} am_sideband_non_fd_handle_t;
+
 #define AM_SIDEBAND_HANDLE_NUM_INT (3)
+#define AM_SIDEBAND_HANDLE_NUM_NON_FD (0)
 #define AM_SIDEBAND_HANDLE_NUM_FD (1)
 #define AM_SIDEBAND_IDENTIFIER (0xabcdcdef)
 
@@ -483,9 +491,11 @@ native_handle_t * am_gralloc_create_sideband_handle(int type, int channel) {
 int am_gralloc_destroy_sideband_handle(native_handle_t * hnd) {
     if (hnd) {
         am_sideband_handle_t * pHnd = (am_sideband_handle_t *)hnd;
-        close(pHnd->fake_fd);
-        pHnd->fake_fd = -1;
-        native_handle_close(hnd);
+        if (hnd->numFds == AM_SIDEBAND_HANDLE_NUM_FD) {
+            close(pHnd->fake_fd);
+            pHnd->fake_fd = -1;
+            native_handle_close(hnd);
+        }
         native_handle_delete(hnd);
     }
 
@@ -495,21 +505,39 @@ int am_gralloc_destroy_sideband_handle(native_handle_t * hnd) {
  int am_gralloc_get_sideband_channel(
     const native_handle_t * hnd, int * channel) {
     if (!hnd || hnd->version != sizeof(native_handle_t)
-        || hnd->numInts != AM_SIDEBAND_HANDLE_NUM_INT || hnd->numFds != AM_SIDEBAND_HANDLE_NUM_FD) {
+        || hnd->numInts != AM_SIDEBAND_HANDLE_NUM_INT) {
         return GRALLOC1_ERROR_BAD_HANDLE;
     }
 
-    am_sideband_handle_t * buffer = (am_sideband_handle_t *)(hnd);
+    if (hnd->numFds == AM_SIDEBAND_HANDLE_NUM_FD) {
+        am_sideband_handle_t * buffer = (am_sideband_handle_t *)(hnd);
+
     if (buffer->id != AM_SIDEBAND_IDENTIFIER)
         return GRALLOC1_ERROR_BAD_HANDLE;
 
-    if (buffer->flags == private_handle_t::PRIV_FLAGS_VIDEO_TUNNEL) {
-        *channel = buffer->channel;
-    } else {
-        if (buffer->channel == AM_VIDEO_DEFAULT || buffer->channel == AM_VIDEO_DEFAULT_LEGACY) {
-            *channel = AM_VIDEO_DEFAULT;
+        if (buffer->flags == private_handle_t::PRIV_FLAGS_VIDEO_TUNNEL) {
+            *channel = buffer->channel;
         } else {
-            *channel = AM_VIDEO_EXTERNAL;
+            if (buffer->channel == AM_VIDEO_DEFAULT || buffer->channel == AM_VIDEO_DEFAULT_LEGACY) {
+                *channel = AM_VIDEO_DEFAULT;
+            } else {
+                *channel = AM_VIDEO_EXTERNAL;
+            }
+        }
+    }else if (hnd->numFds == AM_SIDEBAND_HANDLE_NUM_NON_FD) {
+        am_sideband_non_fd_handle_t * buffer = (am_sideband_non_fd_handle_t *)(hnd);
+
+        if (buffer->id != AM_SIDEBAND_IDENTIFIER)
+            return GRALLOC1_ERROR_BAD_HANDLE;
+
+        if (buffer->flags == private_handle_t::PRIV_FLAGS_VIDEO_TUNNEL) {
+            *channel = buffer->channel;
+        } else {
+            if (buffer->channel == AM_VIDEO_DEFAULT || buffer->channel == AM_VIDEO_DEFAULT_LEGACY) {
+                *channel = AM_VIDEO_DEFAULT;
+            } else {
+                *channel = AM_VIDEO_EXTERNAL;
+            }
         }
     }
 
@@ -517,30 +545,53 @@ int am_gralloc_destroy_sideband_handle(native_handle_t * hnd) {
 }
 
 int am_gralloc_get_sideband_type(const native_handle_t* hnd, int* type) {
+    int ret = GRALLOC1_ERROR_NONE;
+
     if (!hnd || hnd->version != sizeof(native_handle_t)
-            || hnd->numInts != AM_SIDEBAND_HANDLE_NUM_INT
-            || hnd->numFds != AM_SIDEBAND_HANDLE_NUM_FD) {
+            || hnd->numInts != AM_SIDEBAND_HANDLE_NUM_INT) {
         return GRALLOC1_ERROR_BAD_HANDLE;
     }
 
-    const am_sideband_handle_t * buffer = (am_sideband_handle_t *)(hnd);
-    if (buffer->id != AM_SIDEBAND_IDENTIFIER)
-        return GRALLOC1_ERROR_BAD_HANDLE;
+    if (hnd->numFds == AM_SIDEBAND_HANDLE_NUM_FD) {
+        am_sideband_handle_t * buffer = (am_sideband_handle_t *)(hnd);
 
-    int ret = GRALLOC1_ERROR_NONE;
-    if (buffer) {
-        if (buffer->flags & private_handle_t::PRIV_FLAGS_VIDEO_OVERLAY) {
-            *type = AM_TV_SIDEBAND;
-        } else if (buffer->flags & private_handle_t::PRIV_FLAGS_VIDEO_OMX) {
-            *type = AM_OMX_SIDEBAND;
-        } else if (buffer->flags & private_handle_t::PRIV_FLAGS_VIDEO_AMCODEX) {
-            *type = AM_AMCODEX_SIDEBAND;
-        } else if (buffer->flags & private_handle_t::PRIV_FLAGS_VIDEO_TUNNEL) {
-            *type = AM_FIXED_TUNNEL;
-        } else {
-            ret = GRALLOC1_ERROR_BAD_HANDLE;
+        if (buffer->id != AM_SIDEBAND_IDENTIFIER)
+            return GRALLOC1_ERROR_BAD_HANDLE;
+
+        if (buffer) {
+            if (buffer->flags & private_handle_t::PRIV_FLAGS_VIDEO_OVERLAY) {
+                *type = AM_TV_SIDEBAND;
+            } else if (buffer->flags & private_handle_t::PRIV_FLAGS_VIDEO_OMX) {
+                *type = AM_OMX_SIDEBAND;
+            } else if (buffer->flags & private_handle_t::PRIV_FLAGS_VIDEO_AMCODEX) {
+                *type = AM_AMCODEX_SIDEBAND;
+            } else if (buffer->flags & private_handle_t::PRIV_FLAGS_VIDEO_TUNNEL) {
+                *type = AM_FIXED_TUNNEL;
+            } else {
+                ret = GRALLOC1_ERROR_BAD_HANDLE;
+            }
+        }
+    }else if (hnd->numFds == AM_SIDEBAND_HANDLE_NUM_NON_FD) {
+        am_sideband_non_fd_handle_t * buffer = (am_sideband_non_fd_handle_t *)(hnd);
+
+        if (buffer->id != AM_SIDEBAND_IDENTIFIER)
+            return GRALLOC1_ERROR_BAD_HANDLE;
+
+        if (buffer) {
+            if (buffer->flags & private_handle_t::PRIV_FLAGS_VIDEO_OVERLAY) {
+                *type = AM_TV_SIDEBAND;
+            } else if (buffer->flags & private_handle_t::PRIV_FLAGS_VIDEO_OMX) {
+                *type = AM_OMX_SIDEBAND;
+            } else if (buffer->flags & private_handle_t::PRIV_FLAGS_VIDEO_AMCODEX) {
+                *type = AM_AMCODEX_SIDEBAND;
+            } else if (buffer->flags & private_handle_t::PRIV_FLAGS_VIDEO_TUNNEL) {
+                *type = AM_FIXED_TUNNEL;
+            } else {
+                ret = GRALLOC1_ERROR_BAD_HANDLE;
+            }
         }
     }
+
     return ret;
 }
 
