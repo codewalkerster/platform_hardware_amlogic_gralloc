@@ -396,6 +396,13 @@ mapper_error get_metadata(const private_handle_t *handle, const metadata_descrip
 		{
 			int32_t am_omx_tunnel;
 			auto import = handle_cast<imported_handle>(handle);
+			if (import == nullptr)
+			{
+				MALI_GRALLOC_LOGE("get() called on raw handle for AmlMetadataType::AM_OMX_TUNNEL");
+				err = mapper_error::BAD_VALUE;
+				break;
+			}
+
 			get_omx_tunnel(import, &am_omx_tunnel);
 			err = encode_fn(&am_omx_tunnel, &output);
 			break;
@@ -404,6 +411,13 @@ mapper_error get_metadata(const private_handle_t *handle, const metadata_descrip
 		{
 			int32_t am_omx_flag;
 			auto import = handle_cast<imported_handle>(handle);
+			if (import == nullptr)
+			{
+				MALI_GRALLOC_LOGE("get() called on raw handle for AmlMetadataType::AM_OMX_FLAG");
+				err = mapper_error::BAD_VALUE;
+				break;
+			}
+
 			get_omx_flag(import, &am_omx_flag);
 			err = encode_fn(&am_omx_flag, &output);
 			break;
@@ -412,6 +426,13 @@ mapper_error get_metadata(const private_handle_t *handle, const metadata_descrip
 		{
 			int32_t am_omx_video_type;
 			auto import = handle_cast<imported_handle>(handle);
+			if (import == nullptr)
+			{
+				MALI_GRALLOC_LOGE("get() called on raw handle for AmlMetadataType::AM_OMX_VIDEO_TYPE");
+				err = mapper_error::BAD_VALUE;
+				break;
+			}
+
 			get_omx_video_type(import, &am_omx_video_type);
 			err = encode_fn(&am_omx_video_type, &output);
 			break;
@@ -420,6 +441,13 @@ mapper_error get_metadata(const private_handle_t *handle, const metadata_descrip
 		{
 			int32_t am_omx_buffer_sequence;
 			auto import = handle_cast<imported_handle>(handle);
+			if (import == nullptr)
+			{
+				MALI_GRALLOC_LOGE("get() called on raw handle for AmlMetadataType::AM_OMX_BUFFER_SEQUENCE");
+				err = mapper_error::BAD_VALUE;
+				break;
+			}
+
 			get_omx_buffer_sequence(import, &am_omx_buffer_sequence);
 			err = encode_fn(&am_omx_buffer_sequence, &output);
 			break;

@@ -139,6 +139,7 @@ std::optional<std::pair<std::string, capabilities_type::IpCapabilities>> ip_capa
 			{
 				MALI_GRALLOC_LOG(ERROR) << "Failed to parse XML file "
 					<< full_file_path.c_str() << ". Please check the syntax is correct";
+				closedir(dir);
 				return std::nullopt;
 			}
 			else
@@ -146,12 +147,14 @@ std::optional<std::pair<std::string, capabilities_type::IpCapabilities>> ip_capa
 				auto caps = find_ip_capabilities_in_config(*config_file);
 				if (caps.has_value())
 				{
+					closedir(dir);
 					return std::make_pair(full_file_path, *caps);
 				}
 			}
 		}
 	}
 
+	closedir(dir);
 	return std::nullopt;
 }
 

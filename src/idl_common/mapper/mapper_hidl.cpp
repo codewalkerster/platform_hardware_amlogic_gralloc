@@ -138,7 +138,7 @@ void get_from_buffer_descriptor_info(IMapper::BufferDescriptorInfo const &descri
 	private_handle_t partial_handle(0, descriptor.size, descriptor.consumer_usage, descriptor.producer_usage, -1,
 	                                descriptor.hal_format, descriptor.alloc_format, descriptor.width, descriptor.height,
 	                                descriptor.layer_count, descriptor.plane_info, descriptor.pixel_stride,
-	                                (format_info->npln > 1 ? true : false));
+	                                ((format_info && format_info->npln > 1) ? true : false));
 	if (android::gralloc4::isStandardMetadataType(metadataType))
 	{
 		android::status_t err = android::OK;
