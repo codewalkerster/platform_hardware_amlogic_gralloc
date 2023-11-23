@@ -224,7 +224,7 @@ void mali_gralloc_adjust_dimensions(const internal_format_t alloc_format, const 
 	}
 #endif
 
-	AML_GRALLOC_LOGI("%s: alloc_format(FMT:0x%x MOD:0x%x) usage=0x%" PRIx64 " alloc_width=%d alloc_height=%d",
+	AML_GRALLOC_LOGD("%s: alloc_format(FMT:0x%x MOD:0x%x) usage=0x%" PRIx64 " alloc_width=%d alloc_height=%d",
 		__FUNCTION__, alloc_format.get_format(), alloc_format.get_modifiers(), usage, *width, *height);
 }
 
@@ -820,7 +820,7 @@ static std::optional<fmt_props_t> get_supported_format(const format_info_t &fmt_
 
 	auto fmt_flags = is_format_supported(fmt_info, *fmt_ip_support, usage, producers, consumers);
 
-	AML_GRALLOC_LOGI("%s: Format(%u): IP support: 0x%x", __FUNCTION__, fmt_info.id, fmt_flags);
+	AML_GRALLOC_LOGD("%s: Format(%u): IP support: 0x%x", __FUNCTION__, fmt_info.id, fmt_flags);
 
 	if (fmt_flags == F_NONE && consumers.contains(MALI_GRALLOC_IP_GPU) && consumers.contains(MALI_GRALLOC_IP_DPU))
 	{
@@ -846,7 +846,7 @@ static std::optional<fmt_props_t> get_supported_format(const format_info_t &fmt_
 		if (afrc_format.is_afrc())
 		{
 			fmt_props_t ret{ F_AFRC, afrc_format };
-			AML_GRALLOC_LOGI("AFRC format: FMT:0x%x, MOD:0x%x",
+			AML_GRALLOC_LOGD("AFRC format: FMT:0x%x, MOD:0x%x",
 				ret.format.get_format(), ret.format.get_modifiers());
 			return ret;
 		}
@@ -857,7 +857,7 @@ static std::optional<fmt_props_t> get_supported_format(const format_info_t &fmt_
 		if (gralloc_usage_is_no_afbc(usage))
 		{
 			/* Disable AFBC when forced by usage. */
-			AML_GRALLOC_LOGI("AFBC explicitly disabled via usage");
+			AML_GRALLOC_LOGD("AFBC explicitly disabled via usage");
 		}
 		else
 		{
@@ -869,7 +869,7 @@ static std::optional<fmt_props_t> get_supported_format(const format_info_t &fmt_
 				if (alloc_type.has_value() && (fmt_info.npln == 1 || alloc_type->is_multi_plane))
 				{
 					fmt_props_t ret{ F_AFBC, afbc_format };
-					AML_GRALLOC_LOGI("AFBC format: FMT:0x%x, MOD:0x%x",
+					AML_GRALLOC_LOGD("AFBC format: FMT:0x%x, MOD:0x%x",
 						ret.format.get_format(), ret.format.get_modifiers());
 					return ret;
 				}
@@ -883,7 +883,7 @@ static std::optional<fmt_props_t> get_supported_format(const format_info_t &fmt_
 		if (bl_format.is_block_linear())
 		{
 			fmt_props_t ret{ F_BL_YUV, bl_format };
-			AML_GRALLOC_LOGI("BL format: FMT:0x%x, MOD:0x%x",
+			AML_GRALLOC_LOGD("BL format: FMT:0x%x, MOD:0x%x",
 				ret.format.get_format(), ret.format.get_modifiers());
 			return ret;
 		}
@@ -892,12 +892,12 @@ static std::optional<fmt_props_t> get_supported_format(const format_info_t &fmt_
 	if (fmt_flags & F_LIN)
 	{
 		fmt_props_t ret{ F_LIN, base_format };
-		AML_GRALLOC_LOGI("LIN format: FMT:0x%x, MOD:0x%x",
+		AML_GRALLOC_LOGD("LIN format: FMT:0x%x, MOD:0x%x",
 				ret.format.get_format(), ret.format.get_modifiers());
 		return ret;
 	}
 
-	AML_GRALLOC_LOGI("No format selected");
+	AML_GRALLOC_LOGD("No format selected");
 	return std::nullopt;
 }
 
@@ -1095,7 +1095,7 @@ static internal_format_t get_best_format(const uint32_t req_base_format, const u
 			if (sup_fmt_grade)
 			{
 				num_supported_formats++;
-				AML_GRALLOC_LOGI("Supported: Format(FMT:0x%x MOD:0x%x), Flags: 0x%x",
+				AML_GRALLOC_LOGD("Supported: Format(FMT:0x%x MOD:0x%x), Flags: 0x%x",
 					fmt->format.get_format(), fmt->format.get_modifiers(), fmt->f_flags);
 
 				/* 3. Find best modifiers from supported base formats */
@@ -1133,7 +1133,7 @@ static internal_format_t get_best_format(const uint32_t req_base_format, const u
 		}
 	}
 
-	AML_GRALLOC_LOGI("Selected format: FMT:0x%x, MOD:0x%x", alloc_format.get_format(), alloc_format.get_modifiers());
+	AML_GRALLOC_LOGD("Selected format: FMT:0x%x, MOD:0x%x", alloc_format.get_format(), alloc_format.get_modifiers());
 	return alloc_format;
 }
 
@@ -1350,7 +1350,7 @@ internal_format_t mali_gralloc_select_format(const buffer_descriptor_t &descript
 		alloc_format = select_best_format(descriptor, usage);
 	}
 
-	AML_GRALLOC_LOGI("mali_gralloc_select_format: req_format= 0x%x, usage=0x%" PRIx64 ", FMT:0x%x, MOD:0x%x",
+	AML_GRALLOC_LOGD("mali_gralloc_select_format: req_format= 0x%x, usage=0x%" PRIx64 ", FMT:0x%x, MOD:0x%x",
 		req_format, usage, alloc_format.get_format(), alloc_format.get_modifiers());
 
 	return alloc_format;

@@ -514,7 +514,7 @@ mapper_error set_metadata(const imported_handle *handle, const metadata_descript
 				{
 					break;
 				}
-				AML_GRALLOC_LOGI("%s DATASPACE:0x%08x", __FUNCTION__, dataspace);
+				AML_GRALLOC_LOGD("%s DATASPACE:0x%08x", __FUNCTION__, dataspace);
 				//android::CallStack c(LOG_TAG);
 				if (!isSupportedDataSpace(dataspace))
 				{

@@ -91,6 +91,7 @@ static Error mapper_err_to_hidl_err(common::mapper_error error)
 
 GrallocMapper::GrallocMapper()
 {
+	get_debug_log_level();
 }
 
 GrallocMapper::~GrallocMapper()

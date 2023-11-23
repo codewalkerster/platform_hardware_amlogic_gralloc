@@ -148,7 +148,7 @@ mapper_error import_buffer(const native_handle_t *raw_handle, imported_handle **
 	unmap.Disable();
 	*out_handle = import_handle.release();
 
-	AML_GRALLOC_LOGI("%s: raw_handle(%p) out_handle(%p)", __FUNCTION__, raw_handle, *out_handle);
+	AML_GRALLOC_LOGD("%s: raw_handle(%p) out_handle(%p)", __FUNCTION__, raw_handle, *out_handle);
 	return mapper_error::NONE;
 }
 
@@ -416,7 +416,7 @@ mapper_error set(const void *buffer, const metadata_descriptor &metadata, const 
 			importHnd = RegisteredHandlePool::get_instance().aml_get(buffer);
 			if (importHnd == nullptr)
 			{
-				AML_GRALLOC_LOGI("%s-> Buffer: %p has not been registered with Gralloc", __FUNCTION__, buffer);
+				AML_GRALLOC_LOGD("%s-> Buffer: %p has not been registered with Gralloc", __FUNCTION__, buffer);
 				return mapper_error::BAD_BUFFER;
 			}
 		}
@@ -810,7 +810,6 @@ mapper_error get_plane_layouts(const private_handle_t *handle, std::vector<Plane
 
 	return mapper_error::NONE;
 }
-
 } // namespace common
 } // namespace mapper
 } // namespace arm

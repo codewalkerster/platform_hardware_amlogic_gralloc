@@ -785,7 +785,7 @@ int mali_gralloc_derive_format_and_size(buffer_descriptor_t *descriptor)
 	{
 		return -EINVAL;
 	}
-	AML_GRALLOC_LOGI("%s: alloc_format(FMT:0x%x MOD:0x%x) hal_format(0x%" PRIx64 ")", __func__,
+	AML_GRALLOC_LOGD("%s: alloc_format(FMT:0x%x MOD:0x%x) hal_format(0x%" PRIx64 ")", __func__,
 		descriptor->alloc_format.get_format(), descriptor->alloc_format.get_modifiers(), descriptor->hal_format);
 
 	/*

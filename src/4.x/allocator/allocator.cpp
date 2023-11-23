@@ -20,7 +20,6 @@
 #include "idl_common/allocator.h"
 #include "allocator/allocator.h"
 #include "core/buffer_allocation.h"
-#include <cutils/properties.h>
 #include "log.h"
 namespace arm
 {
@@ -36,14 +35,7 @@ using android::hardware::graphics::mapper::V4_0::Error;
 
 GrallocAllocator::GrallocAllocator()
 {
-	char prop[PROPERTY_VALUE_MAX];
-	if (property_get("ro.vendor.gralloc.debugging.log", prop, NULL) > 0)
-	{
-		if (strstr(prop, "true"))
-		{
-			gralloc_enable_debugging_log = true;
-		}
-	}
+	get_debug_log_level();
 }
 
 GrallocAllocator::~GrallocAllocator()

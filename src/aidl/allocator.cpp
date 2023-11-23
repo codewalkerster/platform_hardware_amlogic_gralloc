@@ -26,7 +26,6 @@
 #include <aidl/android/hardware/graphics/allocator/AllocationError.h>
 #include <android/binder_status.h>
 #include <algorithm>
-#include <cutils/properties.h>
 
 namespace aidl::android::hardware::graphics::allocator::impl::arm
 {
@@ -83,20 +82,19 @@ ndk::ScopedAStatus allocator::allocate(const std::vector<uint8_t> &in_descriptor
 }
 allocator::allocator()
 {
-	char prop[PROPERTY_VALUE_MAX];
-	if (property_get("ro.vendor.gralloc.debugging.log", prop, NULL) > 0)
-	{
-		if (strstr(prop, "true"))
-		{
-			gralloc_enable_debugging_log = true;
-		}
-	}
+	get_debug_log_level();
 }
 #if GRALLOC_ALLOCATOR_AIDL_VERSION >= 2
 
 ndk::ScopedAStatus allocator::allocate2(const BufferDescriptorInfo &in_descriptor, int32_t in_count,
-                                        AllocationResult *out_result)
+	AllocationResult *out_result)
 {
+	std::string name{reinterpret_cast<const char*>(in_descriptor.name.data())};
+	if (name == "gralloc_debug_log")
+	{
+		get_debug_log_level();
+		return ndk::ScopedAStatus::fromServiceSpecificError(static_cast<int32_t>(AllocationError::UNSUPPORTED));
+	}
 	auto supported = false;
 	auto status = allocator::isSupported(in_descriptor, &supported);
 	if (!status.isOk())

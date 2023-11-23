@@ -55,7 +55,7 @@ ip_capability::ip_capability(mali_gralloc_ip ip, const std::string &base_path)
 	}
 	else
 	{
-		AML_GRALLOC_LOGI("Read capability file from %s for IP: %s", caps->first.c_str(), gralloc_ip_to_string(m_ip).c_str());
+		AML_GRALLOC_LOGD("Read capability file from %s for IP: %s", caps->first.c_str(), gralloc_ip_to_string(m_ip).c_str());
 
 		m_path = caps->first;
 		m_caps.emplace(caps->second);
@@ -230,10 +230,10 @@ bool ip_capability::is_feature_supported(feature_t feature, permission_t permiss
 			switch (permission)
 			{
 			case permission_t::read:
-				AML_GRALLOC_LOGI("%s: getReadable(): %s", feature_name.c_str(), (readable ? "true" : "false"));
+				AML_GRALLOC_LOGD("%s: getReadable(): %s", feature_name.c_str(), (readable ? "true" : "false"));
 				return readable;
 			case permission_t::write:
-				AML_GRALLOC_LOGI("%s: getWritable(): %s", feature_name.c_str(), (writeable ? "true" : "false"));
+				AML_GRALLOC_LOGD("%s: getWritable(): %s", feature_name.c_str(), (writeable ? "true" : "false"));
 				return writeable;
 			}
 		}

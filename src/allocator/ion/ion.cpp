@@ -64,7 +64,6 @@ static std::map<int, int> imported_ion_client;
 //meson graphics changes start
 #ifdef GRALLOC_AML_EXTEND
 #include <am_gralloc_internal.h>
-#include <cutils/properties.h>
 
 enum ion_heap_type am_gralloc_pick_ion_heap(
 	const buffer_descriptor_t *bufDescriptor, uint64_t usage);
@@ -300,7 +299,7 @@ int ion_device::alloc_from_ion_heap(uint64_t usage, size_t size,
 	if (heap_type == ION_HEAP_TYPE_SECURE)
 		flags |= ION_FLAG_EXTEND_MESON_HEAP_SECURE;
 
-	AML_GRALLOC_LOGI("%s: flags = %u", __func__, flags);
+	AML_GRALLOC_LOGD("%s: flags = %u", __func__, flags);
 
 	bool system_heap_exist = false;
 
@@ -792,7 +791,7 @@ unique_private_handle allocator_allocate(const buffer_descriptor_t *descriptor)
 #ifdef GRALLOC_AML_EXTEND
 	am_gralloc_set_ion_flags(heap_type, usage, NULL, &ion_flags);
 	shared_fd = am_gralloc_exec_uvm_policy(descriptor, usage, agu);
-	AML_GRALLOC_LOGI("shared_fd: ( %d ) agu->delay_alloc:%d agu->uvm_flag:%d",
+	AML_GRALLOC_LOGD("shared_fd: ( %d ) agu->delay_alloc:%d agu->uvm_flag:%d",
 					shared_fd, agu->delay_alloc, agu->uvm_flag);
 
 	if (shared_fd < 0) {
@@ -1147,7 +1146,7 @@ static int am_gralloc_exec_uvm_policy(
 				__func__, uvm_fd);
 			return ret;
 		}
-		MALI_GRALLOC_LOGI("%s: alloc from UVM success. fd = %d, flags = 0x%x, scalar = %d, scaled_buf_size = %d",
+		AML_GRALLOC_LOGI("%s: alloc from UVM success. fd = %d, flags = 0x%x, scalar = %d, scaled_buf_size = %d",
 			__func__, uad.fd, agu->uvm_flag, buf_scalar, v4l2_dec_max_buf_size);
 
 		return uad.fd;

@@ -46,7 +46,7 @@ static void get_format_chroma_siting(internal_format_t format, ExtendableType *c
 
 	if (format_info->is_yuv && (usage & MALI_GRALLOC_USAGE_CHROMA_SITING_MASK))
 	{
-		AML_GRALLOC_LOGI("Forcing Chroma Siting due to usage");
+		AML_GRALLOC_LOGD("Forcing Chroma Siting due to usage");
 		/* Override chroma siting based on private usage. */
 		switch (usage & MALI_GRALLOC_USAGE_CHROMA_SITING_MASK)
 		{

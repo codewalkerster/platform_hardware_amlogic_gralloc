@@ -166,5 +166,6 @@ enum
  */
 int am_gralloc_set_ext_attr(const native_handle_t *hnd, uint32_t attr, int val);
 bool am_gralloc_get_omx_buffer_sequence(const native_handle_t *hnd, int *val);
+void am_gralloc_dumpsys_callback(void);
 
 #endif/*AM_GRALLOC_EXT_H*/

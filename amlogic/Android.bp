@@ -63,6 +63,7 @@ cc_library_shared {
         "android.hardware.graphics.mapper@4.0",
         "libgralloctypes",
         "libhidlbase",
+        "libui",
     ],
     cflags: [
         "-DGRALLOC_AML_EXTEND=1",
@@ -72,6 +73,7 @@ cc_library_shared {
         "hardware/amlogic/gralloc/src",
         "hardware/amlogic/gralloc/src/include",
         "hardware/amlogic/gralloc/interfaces/aidl",
+        "frameworks/native/libs/ui/include/",
     ],
     header_libs: [
         "libgralloc_headers",
@@ -98,6 +100,7 @@ cc_library_static {
         "android.hardware.graphics.mapper@4.0",
         "libgralloctypes",
         "libhidlbase",
+        "libui",
     ],
     cflags: [
         "-DGRALLOC_AML_EXTEND=1",
@@ -106,6 +109,7 @@ cc_library_static {
         "hardware/amlogic/gralloc/src",
         "hardware/amlogic/gralloc/src/include",
         "hardware/amlogic/gralloc/interfaces/aidl",
+        "frameworks/native/libs/ui/include/",
     ],
     header_libs: [
         "libgralloc_headers",

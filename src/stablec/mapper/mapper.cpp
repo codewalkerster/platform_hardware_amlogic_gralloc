@@ -97,6 +97,7 @@ GrallocMapperV5::GrallocMapperV5()
 		m_stablec_metadata.push_back(
 		    { type, metadata.m_description, metadata.m_is_gettable, metadata.m_is_settable, {} });
 	}
+	get_debug_log_level();
 }
 
 AIMapper_Error GrallocMapperV5::importBuffer(const native_handle_t *_Nonnull handle,

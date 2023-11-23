@@ -15,14 +15,13 @@
 #include <aidl/arm/graphics/AmlMetadataType.h>
 #include <core/buffer.h>
 #include <gralloc/formats.h>
-
+#include <ui/GraphicBufferAllocator.h>
 
 /*
 Api default have upgrade to support gralloc 3.x.
 For legacy gralloc, need force enable GRALLOC_USE_GRALLOC1_API in file or mk.
 */
 //#define GRALLOC_USE_GRALLOC1_API 1
-#include <cutils/properties.h>
 
 using android::hardware::graphics::mapper::V4_0::Error;
 using android::hardware::graphics::mapper::V4_0::IMapper;
@@ -776,5 +775,14 @@ bool am_gralloc_get_omx_buffer_sequence(const native_handle_t * hnd, int *val) {
     }
 
     return false;
+}
+
+void am_gralloc_dumpsys_callback(void)
+{
+    buffer_handle_t hnd;
+    uint32_t stride;
+
+    static android::GraphicBufferAllocator & allocService = android::GraphicBufferAllocator::get();
+    allocService.allocateRawHandle(1, 1, 0, 1, 0, &hnd, &stride, "gralloc_debug_log");
 }
 

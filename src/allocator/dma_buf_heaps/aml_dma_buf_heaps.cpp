@@ -27,7 +27,6 @@
 #include "core/buffer_descriptor.h"
 #include "usages.h"
 #include <am_gralloc_internal.h>
-#include <cutils/properties.h>
 #include "aml_dma_buf_heaps.h"
 
 #define V4L2_DECODER_BUFFER_MAX_WIDTH       4096
@@ -225,7 +224,7 @@ unique_private_handle allocator_allocate(const buffer_descriptor_t *descriptor)
 	struct uvm_exec_data *agu = (struct uvm_exec_data *)malloc(sizeof(uvm_exec_data));
 	int shared_fd = am_gralloc_exec_uvm_policy(descriptor, usage, agu);
 
-	AML_GRALLOC_LOGI("shared_fd: (%d) agu->delay_alloc:%d agu->uvm_flag:%d",
+	AML_GRALLOC_LOGD("shared_fd: (%d) agu->delay_alloc:%d agu->uvm_flag:%d",
 					shared_fd, agu->delay_alloc, agu->uvm_flag);
 
 	if (shared_fd < 0) {
@@ -236,7 +235,7 @@ unique_private_handle allocator_allocate(const buffer_descriptor_t *descriptor)
 		}
 
 		shared_fd = allocator->Alloc(heap_name, descriptor->size);
-		AML_GRALLOC_LOGI("not video buffer, allocate from heap: %s fd:%d", heap_name, shared_fd);
+		AML_GRALLOC_LOGD("not video buffer, allocate from heap: %s fd:%d", heap_name, shared_fd);
 		agu->delay_alloc = 0;
 	}
 
@@ -285,7 +284,7 @@ unique_private_handle allocator_allocate(const buffer_descriptor_t *descriptor)
 		} else {
 			memset(vaddr, 0, map_size);
 			munmap(vaddr, map_size);
-			AML_GRALLOC_LOGI("%s:%d bufDescriptor->size:%zu usage=0x%" PRIx64,
+			AML_GRALLOC_LOGD("%s:%d bufDescriptor->size:%zu usage=0x%" PRIx64,
 			    __FUNCTION__, __LINE__, descriptor->size, usage);
 		}
 	}
@@ -377,7 +376,7 @@ int allocator_map(imported_handle *handle)
 			handle->share_fd, strerror(errno), size, usage);
 		return -errno;
 	}
-	AML_GRALLOC_LOGI("mmap(share_fd = %d) succ: all_size=%d, calc_size=%d, usage=0x%" PRIx64 ", mapping=%p",
+	AML_GRALLOC_LOGD("mmap(share_fd = %d) succ: all_size=%d, calc_size=%d, usage=0x%" PRIx64 ", mapping=%p",
 		handle->share_fd, size, handle->size, usage, mapping);
 
 	handle->base = static_cast<std::byte *>(mapping);
@@ -669,7 +668,7 @@ enum dma_buf_heap am_gralloc_pick_dma_buf_heap(
 		static unsigned int max_composer_buf_width = 0;
 		static unsigned int max_composer_buf_height = 0;
 
-		AML_GRALLOC_LOGI("BOARD_RESOLUTION_RATIO=%d", BOARD_RESOLUTION_RATIO);
+		AML_GRALLOC_LOGD("BOARD_RESOLUTION_RATIO=%d", BOARD_RESOLUTION_RATIO);
 		switch (BOARD_RESOLUTION_RATIO) {
 			case 720:
 				max_composer_buf_width = 1280;

@@ -16,7 +16,7 @@
 
 #include "internal_format.h"
 #include "format_info.h"
-bool gralloc_enable_debugging_log = false;
+GRALLOC_LOG_LEVEL gralloc_log_level = GRALLOC_LOG_LEVEL_ERR;
 
 internal_format_t internal_format_t::from_private(mali_gralloc_android_format private_format)
 {
