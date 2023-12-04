@@ -120,3 +120,31 @@ cc_library_static {
     ],
 }
 
+// Internal static lib for amlogic extend gralloc
+cc_library_static {
+    name: "libamgralloc_internal_static",
+    proprietary: true,
+    vendor: true,
+    host_supported: true,
+    cflags: [
+        "-DGRALLOC_AML_EXTEND=1",
+    ],
+    srcs: [
+        "am_gralloc_internal.cpp",
+        "am_gralloc_uvm_ext.cpp",
+    ],
+    include_dirs: [
+        "hardware/amlogic/gralloc/src",
+        "hardware/amlogic/gralloc/src/include",
+    ],
+    shared_libs: [
+        "liblog",
+        "libcutils",
+        "libutils",
+
+    ],
+    header_libs: [
+        "libsystem_headers",
+        "libhardware_headers",
+    ],
+}

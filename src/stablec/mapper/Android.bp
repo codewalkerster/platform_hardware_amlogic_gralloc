@@ -55,6 +55,7 @@ cc_library_shared {
     vintf_fragments: ["mapper.arm.xml"],
     static_libs: [
         "libgralloc_mapper_common",
+        "libamgralloc_internal_static",
     ],
     header_libs: [
         "libbase_headers",

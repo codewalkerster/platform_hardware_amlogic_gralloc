@@ -34,7 +34,7 @@
 #include "format_selection.h"
 #include "usages.h"
 #include "helper_functions.h"
-
+#include "am_gralloc_internal.h"
 #define AFBC_PIXELS_PER_BLOCK 256
 #define AFBC_HEADER_BUFFER_BYTES_PER_BLOCKENTRY 16
 
@@ -810,15 +810,55 @@ int mali_gralloc_derive_format_and_size(buffer_descriptor_t *descriptor)
 	{
 		return -EINVAL;
 	}
+#ifdef GRALLOC_AML_EXTEND
+	descriptor->decoder_para.w_align = 0;
+	descriptor->decoder_para.h_align = 0;
 
-	/*
-	 * Resolution of frame (allocation width and height) might require adjustment.
-	 * This adjustment is only based upon specific usage and pixel format.
-	 * If using AFBC, further adjustments to the allocation width and height will be made later
-	 * based on AFBC alignment requirements and, for YUV, the plane properties.
-	 */
-	mali_gralloc_adjust_dimensions(descriptor->alloc_format, usage, &alloc_width, &alloc_height);
+	if (usage & MESON_GRALLOC_USAGE_USING_SLOT)
+	{
+		uint32_t slot_id = (uint32_t)MESON_GRALLOC_DECODE_SLOT_ID(usage);
+		if (am_gralloc_get_para_from_node(slot_id, &descriptor->decoder_para))
+		{
+			if (descriptor->decoder_para.size == 0)
+			{
+				descriptor->decoder_para_type = buffer_descriptor_t::WxH;
+				if (!descriptor->decoder_para.valid_wh())
+				{
+					descriptor->decoder_para_type = buffer_descriptor_t::NONE;
+					MALI_GRALLOC_LOGW("%s: All of the parameters from decoder are 0 for slot_id=%u!",
+						__FUNCTION__, slot_id);
+				}
+			}
+			else
+			{
+				descriptor->decoder_para_type = buffer_descriptor_t::SIZE;
+				if (descriptor->decoder_para.valid_wh())
+				{
+					descriptor->decoder_para_type = buffer_descriptor_t::BOTH;
+				}
+			}
+		}
+	}
 
+	if (descriptor->decoder_para.w_align != 0 && descriptor->decoder_para.h_align != 0)
+	{
+		alloc_width = GRALLOC_ALIGN(alloc_width, descriptor->decoder_para.w_align);
+		alloc_height = GRALLOC_ALIGN(alloc_height, descriptor->decoder_para.h_align);
+		AML_GRALLOC_LOGI("%s: use decoder align(%u*%u). after align w*h(%u*%u)",
+			__FUNCTION__, descriptor->decoder_para.w_align, descriptor->decoder_para.h_align,
+			alloc_width, alloc_height);
+	}
+	else
+#endif
+	{
+		/*
+		 * Resolution of frame (allocation width and height) might require adjustment.
+		 * This adjustment is only based upon specific usage and pixel format.
+		 * If using AFBC, further adjustments to the allocation width and height will be made later
+		 * based on AFBC alignment requirements and, for YUV, the plane properties.
+		 */
+		mali_gralloc_adjust_dimensions(descriptor->alloc_format, usage, &alloc_width, &alloc_height);
+	}
 	{
 		/* Obtain buffer size and plane information. */
 		calc_allocation_size(alloc_width, alloc_height, *alloc_type, *format_info, usage, &descriptor->pixel_stride,

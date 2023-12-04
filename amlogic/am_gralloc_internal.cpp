@@ -9,12 +9,15 @@
 
 #include "am_gralloc_internal.h"
 #include <sys/ioctl.h>
-#include <buffer.h>
+#include "core/buffer.h"
+#include "am_gralloc_uvm_ext.h"
+#include "log.h"
 
 #define V4LVIDEO_IOC_MAGIC  'I'
 #define V4LVIDEO_IOCTL_ALLOC_FD   _IOW(V4LVIDEO_IOC_MAGIC, 0x02, int)
 
 #define UNUSED(x) (void)x
+const static int AML_GRALLOC_SLOT_NUM = 32;
 
 bool am_gralloc_is_omx_metadata_extend_usage(
     uint64_t usage) {
@@ -125,5 +128,26 @@ bool need_do_width_height_align(uint64_t usage,
         return true;
     else
         return false;
+}
+
+bool am_gralloc_get_para_from_node(uint32_t slot_id, struct gralloc_decoder_para *para)
+{
+    if (slot_id >= AML_GRALLOC_SLOT_NUM) {
+        ALOGE("%s: slot_id(%d) invalid!", __func__, slot_id);
+        return false;
+    }
+
+    uvm_decoder_para uvm_para{slot_id};
+    if (am_gralloc_get_uvm_decoder_para(&uvm_para) < 0) {
+        AML_GRALLOC_LOGI("%s: get decoder para from UVM failed, may be not support! slot_id=%d", __func__, slot_id);
+        return false;
+    }
+
+    para->width   = uvm_para.width;
+    para->height  = uvm_para.height;
+    para->w_align = uvm_para.w_align;
+    para->h_align = uvm_para.h_align;
+    para->size    = uvm_para.size;
+    return true;
 }
 

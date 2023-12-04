@@ -211,6 +211,7 @@ struct private_handle_t : public native_handle
 	uint32_t am_extend_type{0};
 	uint32_t ion_delay_alloc{0};
 	uint32_t usage{0};
+	bool     need_mmap{true};
 //meson graphics changes end
 
 	/* Size of the attribute shared region in bytes. */
@@ -407,3 +408,26 @@ static inline unique_imported_handle make_imported_handle(private_handle_t *raw_
 
 	return import_handle;
 }
+
+#ifdef GRALLOC_AML_EXTEND
+struct gralloc_decoder_para {
+	uint32_t width;
+	uint32_t height;
+	uint32_t w_align;
+	uint32_t h_align;
+	uint32_t size;
+	gralloc_decoder_para()
+		: width{0}
+		, height{0}
+		, w_align{0}
+		, h_align{0}
+		, size{0}
+	{
+	}
+	bool valid_wh()
+	{
+		return ((width != 0) && (height != 0) && (w_align != 0) && (h_align != 0));
+	}
+};
+#endif
+

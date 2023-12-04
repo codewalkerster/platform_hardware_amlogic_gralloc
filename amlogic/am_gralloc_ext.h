@@ -9,10 +9,8 @@
 
 #ifndef AM_GRALLOC_EXT_H
 #define AM_GRALLOC_EXT_H
-
+#include <map>
 #include <utils/NativeHandle.h>
-#include "am_gralloc_ref.h"
-
 
 bool am_gralloc_is_valid_graphic_buffer(const native_handle_t * hnd);
 
@@ -167,5 +165,23 @@ enum
 int am_gralloc_set_ext_attr(const native_handle_t *hnd, uint32_t attr, int val);
 bool am_gralloc_get_omx_buffer_sequence(const native_handle_t *hnd, int *val);
 void am_gralloc_dumpsys_callback(void);
+
+/* This macro is used to prevent compilation failure due to duplication
+   of definitions in the decoder module. */
+#ifndef AM_GRALLOC_EXT_2
+#define AM_GRALLOC_EXT_2
+typedef enum {
+    GRALLOC_DECODE_PARA_WIDTH,
+    GRALLOC_DECODE_PARA_HEIGHT,
+    GRALLOC_DECODE_PARA_WALIGN,
+    GRALLOC_DECODE_PARA_HALIGN,
+    GRALLOC_DECODE_PARA_SIZE,
+} AM_GRALLOC_DECODE_PARA_TYPE;
+using am_gralloc_decode_para = std::map<AM_GRALLOC_DECODE_PARA_TYPE, uint64_t>;
+#endif
+void am_gralloc_set_parameters(uint32_t slot_id, am_gralloc_decode_para para_map);
+uint32_t am_gralloc_get_slot_id();
+void am_gralloc_free_slot(uint32_t slot_id);
+uint64_t am_gralloc_compose_slot_id(uint32_t slot_id);
 
 #endif/*AM_GRALLOC_EXT_H*/

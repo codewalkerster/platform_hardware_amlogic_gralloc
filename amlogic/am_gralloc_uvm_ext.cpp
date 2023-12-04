@@ -113,3 +113,44 @@ bool am_gralloc_set_uvm_buf_usage(const native_handle_t * hnd, int usage) {
 
 	return ret;
 }
+
+int am_gralloc_set_uvm_decoder_para(uvm_decoder_para *uvm_para)
+{
+	int ret = 0;
+	int uvm_fd = uvm_ext_device::get_uvm();
+
+	if (uvm_fd < 0) {
+		ALOGE("%s, get_uvm failed uvm_fd=%d", __func__, uvm_fd);
+		return -1;
+	}
+
+	ret = ioctl(uvm_fd, UVM_IOC_SET_DECODER_PARA, uvm_para);
+	if (ret < 0) {
+		ALOGE("%s, failed uvm_fd=%d", __func__, uvm_fd);
+		return ret;
+	}
+
+	ALOGI("%s: parameters:%s", __func__, uvm_para->to_str().c_str());
+	return ret;
+}
+
+int am_gralloc_get_uvm_decoder_para(uvm_decoder_para *uvm_para)
+{
+	int ret = 0;
+	int uvm_fd = uvm_ext_device::get_uvm();
+
+	if (uvm_fd < 0) {
+		ALOGE("%s, get_uvm failed uvm_fd=%d", __func__, uvm_fd);
+		return -1;
+	}
+
+	ret = ioctl(uvm_fd, UVM_IOC_GET_DECODER_PARA, uvm_para);
+	if (ret < 0) {
+		ALOGE("%s, failed uvm_fd=%d", __func__, uvm_fd);
+		return ret;
+	}
+
+	ALOGI("%s: parameters:%s", __func__, uvm_para->to_str().c_str());
+	return ret;
+}
+

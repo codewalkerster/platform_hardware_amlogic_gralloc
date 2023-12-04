@@ -70,4 +70,13 @@ struct buffer_descriptor_t
 	plane_layout plane_info{};
 
 	std::underlying_type_t<buffer_descriptor_flags> flags{};
+#ifdef GRALLOC_AML_EXTEND
+	enum {
+		NONE,
+		WxH,
+		SIZE,
+		BOTH,
+	} decoder_para_type {NONE};
+	struct gralloc_decoder_para decoder_para;
+#endif
 };

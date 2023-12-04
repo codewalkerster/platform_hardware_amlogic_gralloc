@@ -26,7 +26,6 @@ filegroup {
         "formats.cpp",
         "format_info.cpp",
         "drm_utils.cpp",
-        "am_gralloc_internal.cpp",
     ],
 }
 

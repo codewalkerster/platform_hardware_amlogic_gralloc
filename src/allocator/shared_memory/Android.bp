@@ -28,4 +28,7 @@ cc_library_static {
         "libcutils",
     ],
     srcs: ["shared_memory.cpp"],
+    cflags: [
+        "-DGRALLOC_AML_EXTEND=1",
+    ],
 }

@@ -45,6 +45,9 @@
 #define GRALLOC_USAGE_PRIVATE_2 1ULL << 30
 #define GRALLOC_USAGE_PRIVATE_3 1ULL << 31
 /* Bits 48 - 63 are reserved for vendors */
+#define GRALLOC_USAGE_PRIVATE_4 1ULL << 63
+#define GRALLOC_USAGE_PRIVATE_5 1ULL << 62
+#define GRALLOC_USAGE_PRIVATE_6 1ULL << 61
 #define GRALLOC_USAGE_PRIVATE_7 1ULL << 60
 #define GRALLOC_USAGE_PRIVATE_8 1ULL << 59
 #define GRALLOC_USAGE_PRIVATE_9 1ULL << 58
@@ -178,10 +181,13 @@ static const uint64_t VENDOR_USAGE = GRALLOC_USAGE_PRIVATE_19 | /* 1U << 48 */
                                      GRALLOC_USAGE_PRIVATE_9 | /* 1U << 58 */
                                      GRALLOC_USAGE_PRIVATE_8 | /* 1U << 59 */
                                      GRALLOC_USAGE_PRIVATE_7 | /* 1U << 60 */
+                                     GRALLOC_USAGE_PRIVATE_6 | /* 1U << 61 */
+                                     GRALLOC_USAGE_PRIVATE_5 | /* 1U << 62 */
+                                     GRALLOC_USAGE_PRIVATE_4 | /* 1U << 63 */
                                      GRALLOC_USAGE_PRIVATE_0 | /* 1U << 28 */
                                      GRALLOC_USAGE_PRIVATE_1 | /* 1U << 29 */
                                      GRALLOC_USAGE_PRIVATE_2 | /* 1U << 30 */
-                                     GRALLOC_USAGE_PRIVATE_3; /* 1U << 31 */
+                                     GRALLOC_USAGE_PRIVATE_3;  /* 1U << 31 */
 
 static const uint64_t VALID_USAGE = STANDARD_USAGE | VENDOR_USAGE;
 

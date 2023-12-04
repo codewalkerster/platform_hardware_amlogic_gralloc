@@ -34,12 +34,12 @@ bool am_gralloc_is_video_decoder_replace_buffer_usage(uint64_t usage);
  */
 bool need_do_width_height_align(uint64_t usage, int width, int height);
 
-
 /*
 For gralloc to set special buffer flag.
 */
 int am_gralloc_get_omx_metadata_extend_flag();
 int am_gralloc_get_coherent_extend_flag();
 int am_gralloc_get_secure_extend_flag();
+bool am_gralloc_get_para_from_node(uint32_t slot_id, struct gralloc_decoder_para *para);
 
 #endif/*AM_GRALLOC_EXT_INTERNAL_H*/

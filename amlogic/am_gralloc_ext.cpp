@@ -16,7 +16,8 @@
 #include <core/buffer.h>
 #include <gralloc/formats.h>
 #include <ui/GraphicBufferAllocator.h>
-
+#include "am_gralloc_uvm_ext.h"
+#include "am_gralloc_ref.h"
 /*
 Api default have upgrade to support gralloc 3.x.
 For legacy gralloc, need force enable GRALLOC_USE_GRALLOC1_API in file or mk.
@@ -49,6 +50,8 @@ const static IMapper::MetadataType AmlMetadataType_AM_OMX_BUFFER_SEQUENCE{
     GRALLOC_AML_METADATA_TYPE_NAME,
     static_cast<int64_t>(aidl::arm::graphics::AmlMetadataType::AM_OMX_BUFFER_SEQUENCE)
 };
+const static int AML_GRALLOC_SLOT_NUM = 32;
+static char aml_gralloc_slot_status[AML_GRALLOC_SLOT_NUM] = { 0 };
 
 static IMapper &get_service()
 {
@@ -784,5 +787,89 @@ void am_gralloc_dumpsys_callback(void)
 
     static android::GraphicBufferAllocator & allocService = android::GraphicBufferAllocator::get();
     allocService.allocateRawHandle(1, 1, 0, 1, 0, &hnd, &stride, "gralloc_debug_log");
+}
+
+uint32_t am_gralloc_get_slot_id()
+{
+    /* TODO: If there are other modules using this solution,
+       the slot-id needs to be assigned from UVM instead of gralloc directly.
+     */
+    for (uint32_t i = 0; i < AML_GRALLOC_SLOT_NUM; ++i) {
+        if (aml_gralloc_slot_status[i] == 0) {
+            /* Used to determine whether UVM supports setting decoder parameters. */
+            uvm_decoder_para para{i};
+            if (am_gralloc_set_uvm_decoder_para(&para) < 0) {
+                break;
+            }
+            aml_gralloc_slot_status[i] = 1;
+            return i;
+        }
+    }
+
+    return (uint32_t)~0U;
+}
+
+void am_gralloc_set_parameters(uint32_t slot_id, am_gralloc_decode_para para_map)
+{
+    if (slot_id >= AML_GRALLOC_SLOT_NUM || !aml_gralloc_slot_status[slot_id]) {
+        ALOGE("%s: set parameters failed, slot_id(%d) is invalid.", __func__, slot_id);
+        return;
+    }
+
+    uvm_decoder_para uvm_para{slot_id};
+    for (auto para : para_map) {
+        switch (para.first) {
+            case GRALLOC_DECODE_PARA_WIDTH:
+                uvm_para.width = para.second;
+                break;
+            case GRALLOC_DECODE_PARA_HEIGHT:
+                uvm_para.height = para.second;
+                break;
+            case GRALLOC_DECODE_PARA_WALIGN:
+                uvm_para.w_align = para.second;
+                break;
+            case GRALLOC_DECODE_PARA_HALIGN:
+                uvm_para.h_align = para.second;
+                break;
+            case GRALLOC_DECODE_PARA_SIZE:
+                uvm_para.size = para.second;
+                break;
+            default:
+                ALOGW("%s: parameter not supported! %u", __func__, para.first);
+                break;
+        }
+    }
+
+    if ((uvm_para.size == 0) &&
+        (uvm_para.width == 0 || uvm_para.height == 0 || uvm_para.w_align == 0 || uvm_para.h_align == 0))
+    {
+        ALOGE("%s: All of the parameters from decoder are 0 for slot_id=%u!", __FUNCTION__, slot_id);
+        return;
+    }
+
+    (void)am_gralloc_set_uvm_decoder_para(&uvm_para);
+}
+
+void am_gralloc_free_slot(uint32_t slot_id)
+{
+    if (slot_id >= AML_GRALLOC_SLOT_NUM) {
+        ALOGE("%s: free slot failed, slot_id(%d) is invalid.", __func__, slot_id);
+        return;
+    }
+
+    uvm_decoder_para para{slot_id};
+    aml_gralloc_slot_status[slot_id] = 0;
+    (void)am_gralloc_set_uvm_decoder_para(&para);
+}
+
+uint64_t am_gralloc_compose_slot_id(uint32_t slot_id)
+{
+    if (slot_id >= AML_GRALLOC_SLOT_NUM || !aml_gralloc_slot_status[slot_id]) {
+        ALOGE("%s: slot_id(%d) is invalid.", __func__, slot_id);
+        return 0;
+    }
+
+    uint64_t usage = (uint64_t)slot_id;
+    return MESON_GRALLOC_COMP_SLOT_ID(usage);
 }
 

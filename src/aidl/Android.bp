@@ -47,6 +47,7 @@ cc_library_shared {
     static_libs: [
         "libaidlcommonsupport",
         "libgralloc_allocator_idl",
+        "libamgralloc_internal_static",
     ],
     export_include_dirs: [
         ".",
@@ -56,5 +57,8 @@ cc_library_shared {
     ],
     srcs: [
         "allocator.cpp",
+    ],
+    cflags: [
+        "-DGRALLOC_AML_EXTEND=1",
     ],
 }

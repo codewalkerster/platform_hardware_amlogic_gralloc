@@ -295,8 +295,8 @@ unique_private_handle allocator_allocate(const buffer_descriptor_t *descriptor)
 	    descriptor->consumer_usage, descriptor->producer_usage, std::move(fd), descriptor->hal_format,
 	    descriptor->alloc_format, descriptor->width, descriptor->height, descriptor->layer_count,
 	    descriptor->plane_info, descriptor->pixel_stride);
-	AML_GRALLOC_LOGI("%s: heap_name:%s width:%d height:%d stride:%d format=0x%" PRIx64 " usage=0x%" PRIx64,
-			__FUNCTION__, heap_name, descriptor->width, descriptor->height, descriptor->pixel_stride,
+	AML_GRALLOC_LOGI("%s: heap_name:%s width:%d height:%d size:%zu stride:%d format=0x%" PRIx64 " usage=0x%" PRIx64,
+			__FUNCTION__, heap_name, descriptor->width, descriptor->height, descriptor->size, descriptor->pixel_stride,
 			descriptor->hal_format, usage);
 
 	if (nullptr == private_handle)
@@ -313,6 +313,13 @@ unique_private_handle allocator_allocate(const buffer_descriptor_t *descriptor)
 	private_handle->req_height = descriptor->height;
 	private_handle->format = descriptor->hal_format;
 	private_handle->usage = usage;
+	if ((descriptor->decoder_para_type == buffer_descriptor_t::WxH) ||
+		(descriptor->decoder_para_type == buffer_descriptor_t::BOTH))
+	{
+		private_handle->need_mmap =
+			(GRALLOC_ALIGN(descriptor->decoder_para.width, descriptor->decoder_para.w_align) ==
+				GRALLOC_ALIGN(descriptor->width, descriptor->decoder_para.w_align));
+	}
 
 	free(agu);
 
@@ -361,6 +368,12 @@ int allocator_map(imported_handle *handle)
 	if (handle->ion_delay_alloc)
 		return 0;
 	uint64_t usage = handle->producer_usage | handle->consumer_usage;
+	if (!handle->need_mmap) {
+		AML_GRALLOC_LOGD("%s[dma]: do not need to do mmap. buffer size(%d*%d), usage=0x%" PRIx64,
+			__func__, handle->width, handle->height, usage);
+		return 0;
+	}
+
 	if (am_gralloc_is_video_decoder_quarter_buffer_usage(usage) ||
 		am_gralloc_is_video_decoder_one_sixteenth_buffer_usage(usage)) {
 		return 0;
@@ -389,6 +402,12 @@ void allocator_unmap(imported_handle *handle)
 	void *base = static_cast<std::byte *>(handle->base);
 	uint64_t usage = handle->producer_usage | handle->consumer_usage;
 	int size = handle->size;
+
+	if (!handle->need_mmap) {
+		AML_GRALLOC_LOGD("%s[dma]: do not need to do unmmap. buffer size(%d*%d), usage=0x%" PRIx64,
+			__func__, handle->width, handle->height, usage);
+		return;
+	}
 
 	if (handle->ion_delay_alloc ||
 		am_gralloc_is_video_decoder_quarter_buffer_usage(usage) ||
@@ -525,10 +544,12 @@ static int am_gralloc_exec_uvm_policy(
 
 	if (am_gralloc_is_omx_metadata_extend_usage(usage) ||
 		am_gralloc_is_omx_osd_extend_usage(usage)) {
-
 		agu->uvm_buffer_flag |= private_handle_t::PRIV_FLAGS_UVM_BUFFER;
 
-		if (am_gralloc_is_omx_osd_extend_usage(usage) ||
+		if (bufDescriptor->decoder_para_type != buffer_descriptor_t::NONE) {
+			// Use a special scalar, so that the size passed by the decoder is used
+			buf_scalar = 2;
+		} else if (am_gralloc_is_omx_osd_extend_usage(usage) ||
 			am_gralloc_is_video_decoder_full_buffer_usage(usage) ||
 			am_gralloc_is_video_decoder_OSD_buffer_usage(usage)) {
 			buf_scalar = 1;
@@ -558,10 +579,21 @@ static int am_gralloc_exec_uvm_policy(
 			bufDescriptor->hal_format == MALI_GRALLOC_FORMAT_INTERNAL_P010))
 			agu->uvm_flag |= UVM_SKIP_REALLOC;
 
-		if (need_do_width_height_align(usage, bufDescriptor->width, bufDescriptor->height))
+		if (bufDescriptor->decoder_para.w_align != 0)
+			aligned_bit = bufDescriptor->decoder_para.w_align;
+		else if (need_do_width_height_align(usage, bufDescriptor->width, bufDescriptor->height))
 			aligned_bit = 64;
 
-		if (buf_scalar > 1) {
+		if (bufDescriptor->decoder_para_type == buffer_descriptor_t::WxH) {
+			v4l2_dec_max_buf_size =
+				GRALLOC_ALIGN(bufDescriptor->decoder_para.width, bufDescriptor->decoder_para.w_align) *
+				GRALLOC_ALIGN(bufDescriptor->decoder_para.height, bufDescriptor->decoder_para.h_align) * 3 / 2;
+			if (bufDescriptor->hal_format == HAL_PIXEL_FORMAT_YCBCR_P010)
+				v4l2_dec_max_buf_size *= 2;
+		} else if ((bufDescriptor->decoder_para_type == buffer_descriptor_t::SIZE) ||
+		           (bufDescriptor->decoder_para_type == buffer_descriptor_t::BOTH)) {
+			v4l2_dec_max_buf_size = bufDescriptor->decoder_para.size;
+		} else if (buf_scalar > 1) {
 			v4l2_dec_max_buf_size = am_gralloc_exec_media_policy(
 										v4l2_dec_max_buf_size,
 										buf_scalar,
@@ -587,8 +619,8 @@ static int am_gralloc_exec_uvm_policy(
 				__func__, uvm_fd);
 			return ret;
 		}
-		AML_GRALLOC_LOGI("%s: alloc from UVM success. fd = %d, flags = 0x%x, scalar = %d, scaled_buf_size = %d",
-			__func__, uad.fd, agu->uvm_flag, buf_scalar, v4l2_dec_max_buf_size);
+		AML_GRALLOC_LOGI("%s: alloc from UVM success. fd = %d, flags = 0x%x, scalar = %d, scaled_buf_size = %d, type=%d, aligned_bit = %d",
+			__func__, uad.fd, agu->uvm_flag, buf_scalar, v4l2_dec_max_buf_size, bufDescriptor->decoder_para_type, aligned_bit);
 		return uad.fd;
 	}
 	return ret;
