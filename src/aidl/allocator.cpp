@@ -62,7 +62,9 @@ static ndk::ScopedAStatus allocate_common(buffer_descriptor_t *buffer_descriptor
 	/* Pass ownership when returning the created handles. */
 	for (auto &handle : *result)
 	{
-		out_result->buffers.emplace_back(::android::makeToAidl(handle.release()));
+		auto handle_to_move = handle.release();
+		out_result->buffers.emplace_back(::android::makeToAidl(handle_to_move));
+		native_handle_delete(handle_to_move);
 	}
 
 	return ndk::ScopedAStatus::ok();
