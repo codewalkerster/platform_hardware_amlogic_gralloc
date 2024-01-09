@@ -76,7 +76,7 @@ cc_library_shared {
         "frameworks/native/libs/ui/include/",
     ],
     header_libs: [
-        "libgralloc_headers",
+        "arm_gralloc_headers",
     ],
     srcs: [
         "am_gralloc_ext.cpp",
@@ -112,7 +112,7 @@ cc_library_static {
         "frameworks/native/libs/ui/include/",
     ],
     header_libs: [
-        "libgralloc_headers",
+        "arm_gralloc_headers",
     ],
     srcs: [
         "am_gralloc_ext.cpp",

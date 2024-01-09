@@ -100,6 +100,9 @@ static aidl::arm::graphics::DataType data_type_internal_to_aidl(mali_gralloc_for
 	case mali_gralloc_format_data_type::SINT:
 		return (aidl::arm::graphics::DataType::SINT);
 		break;
+	case mali_gralloc_format_data_type::SFLOAT:
+		return (aidl::arm::graphics::DataType::SFLOAT);
+		break;
 	default:
 		return (aidl::arm::graphics::DataType::UNKNOWN);
 		break;
@@ -113,13 +116,15 @@ void get_from_buffer_descriptor_info(IMapper::BufferDescriptorInfo const &descri
 	/* This will hold the metadata that is returned. */
 	hidl_vec<uint8_t> vec;
 
-	buffer_descriptor_t descriptor;
+	buffer_descriptor_t descriptor{};
 	descriptor.width = description.width;
 	descriptor.height = description.height;
 	descriptor.layer_count = description.layerCount;
 	descriptor.hal_format = static_cast<uint64_t>(description.format);
 	descriptor.producer_usage = static_cast<uint64_t>(description.usage);
 	descriptor.consumer_usage = descriptor.producer_usage;
+
+	descriptor.flags = common::DESCRIPTOR_ALLOCATOR_FLAGS;
 
 	/* Check if it is possible to allocate a buffer for the given description */
 	const int alloc_result = mali_gralloc_derive_format_and_size(&descriptor);
@@ -237,8 +242,7 @@ void get_from_buffer_descriptor_info(IMapper::BufferDescriptorInfo const &descri
 		{
 			android_dataspace_t dataspace;
 			get_format_dataspace(partial_handle.alloc_format.get_base_info(),
-			                     partial_handle.consumer_usage | partial_handle.producer_usage, partial_handle.width,
-			                     partial_handle.height, &dataspace);
+			                     partial_handle.consumer_usage | partial_handle.producer_usage, &dataspace);
 			err = android::gralloc4::encodeDataspace(static_cast<Dataspace>(dataspace), &vec);
 			break;
 		}
@@ -282,14 +286,12 @@ void get_from_buffer_descriptor_info(IMapper::BufferDescriptorInfo const &descri
 			err = android::gralloc4::encodeSmpte2094_40(smpte2094_40, &vec);
 			break;
 		}
-#if PLATFORM_SDK_VERSION >= 33
 		case StandardMetadataType::SMPTE2094_10:
 		{
 			std::optional<std::vector<uint8_t>> smpte2094_10{};
 			err = android::gralloc4::encodeSmpte2094_10(smpte2094_10, &vec);
 			break;
 		}
-#endif
 		case StandardMetadataType::BUFFER_ID:
 		case StandardMetadataType::INVALID:
 		default:

@@ -35,8 +35,6 @@ GRALLOC_HWC_FORCE_BGRA_8888?=0
 # When enabled, disables AFBC for FB usage when HWC is in use
 GRALLOC_HWC_FB_DISABLE_AFBC?=0
 
-# When enabled, buffers will never be allocated with AFBC
-GRALLOC_ARM_NO_EXTERNAL_AFBC?=0
 
 #meson config
 GRALLOC_AML_EXTEND?=1
@@ -62,7 +60,7 @@ $(call soong_config_set,arm_gralloc,gralloc_use_ion_dma_heap,$(GRALLOC_USE_ION_D
 $(call soong_config_set,arm_gralloc,gralloc_use_contiguous_display_memory,$(AML_ALLOC_SCANOUT_FOR_COMPOSE))
 $(call soong_config_set,arm_gralloc,gralloc_hwc_force_bgra_8888,$(GRALLOC_HWC_FORCE_BGRA_8888))
 $(call soong_config_set,arm_gralloc,gralloc_hwc_fb_disable_afbc,$(GRALLOC_HWC_FB_DISABLE_AFBC))
-$(call soong_config_set,arm_gralloc,gralloc_arm_no_external_afbc,$(GRALLOC_ARM_NO_EXTERNAL_AFBC))
+
 $(call soong_config_set,arm_gralloc,gralloc_target_product,$(TARGET_PRODUCT))
 $(call soong_config_set,arm_gralloc,board_resolution,v$(BOARD_RESOLUTION_RATIO))
 

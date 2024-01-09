@@ -28,6 +28,7 @@
 	V(FORMAT_R10G10B10A2)             \
 	V(FORMAT_R10G10B10A10)            \
 	V(FORMAT_R16G16B16A16_FLOAT)      \
+	V(FORMAT_DEPTH_STENCIL)           \
 	V(YUV_BL_8)                       \
 	V(YUV_BL_10)                      \
 	V(AFBC_16X16)                     \
@@ -39,8 +40,8 @@
 	V(AFBC_WRITE_NON_SPARSE)          \
 	V(AFBC_YUV)                       \
 	V(AFBC_FORMAT_R16G16B16A16_FLOAT) \
-	V(AFBC_FORMAT_RGB16)              \
-	V(AFRC_FORMAT_RGB16)              \
+	V(AFBC_FORMAT_Y210)               \
+	V(FORMAT_RGB16)                   \
 	V(AFRC_ROT_LAYOUT)                \
 	V(AFRC_SCAN_LAYOUT)               \
 	V(DISABLED)
@@ -51,8 +52,7 @@
  */
 enum class feature_t
 {
-	EXPAND_FEATURES(FEATURE)
-	UNKNOWN
+	EXPAND_FEATURES(FEATURE) UNKNOWN
 };
 
 #undef FEATURE
@@ -66,15 +66,12 @@ enum class feature_t
  */
 inline feature_t name_to_feature(const std::string &name)
 {
-	#define MAP_ITEM(F) {#F, feature_t::F},
-	static std::unordered_map<std::string, feature_t> name_to_feature_map =
-	{
-		EXPAND_FEATURES(MAP_ITEM)
-	};
-	#undef MAP_ITEM
+#define MAP_ITEM(F) { #F, feature_t::F },
+	static std::unordered_map<std::string, feature_t> name_to_feature_map = { EXPAND_FEATURES(MAP_ITEM) };
+#undef MAP_ITEM
 
 	auto mapping = name_to_feature_map.find(name);
-	if(mapping != name_to_feature_map.end())
+	if (mapping != name_to_feature_map.end())
 	{
 		return mapping->second;
 	}
@@ -92,15 +89,12 @@ inline feature_t name_to_feature(const std::string &name)
  */
 inline std::string feature_to_name(feature_t feature)
 {
-	#define MAP_ITEM(F) {feature_t::F, #F},
-	static std::unordered_map<feature_t, std::string> feature_to_name_map =
-	{
-		EXPAND_FEATURES(MAP_ITEM)
-	};
-	#undef MAP_ITEM
+#define MAP_ITEM(F) { feature_t::F, #F },
+	static std::unordered_map<feature_t, std::string> feature_to_name_map = { EXPAND_FEATURES(MAP_ITEM) };
+#undef MAP_ITEM
 
 	auto mapping = feature_to_name_map.find(feature);
-	if(mapping != feature_to_name_map.end())
+	if (mapping != feature_to_name_map.end())
 	{
 		return mapping->second;
 	}

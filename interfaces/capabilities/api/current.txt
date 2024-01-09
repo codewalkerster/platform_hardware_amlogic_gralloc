@@ -40,17 +40,18 @@ package capabilities_type {
     enum_constant public static final capabilities_type.Name AFBC_BLOCK_SPLIT;
     enum_constant public static final capabilities_type.Name AFBC_DOUBLE_BODY;
     enum_constant public static final capabilities_type.Name AFBC_FORMAT_R16G16B16A16_FLOAT;
-    enum_constant public static final capabilities_type.Name AFBC_FORMAT_RGB16;
+    enum_constant public static final capabilities_type.Name AFBC_FORMAT_Y210;
     enum_constant public static final capabilities_type.Name AFBC_TILED_HEADERS;
     enum_constant public static final capabilities_type.Name AFBC_WRITE_NON_SPARSE;
     enum_constant public static final capabilities_type.Name AFBC_YUV;
-    enum_constant public static final capabilities_type.Name AFRC_FORMAT_RGB16;
     enum_constant public static final capabilities_type.Name AFRC_ROT_LAYOUT;
     enum_constant public static final capabilities_type.Name AFRC_SCAN_LAYOUT;
     enum_constant public static final capabilities_type.Name DISABLED;
+    enum_constant public static final capabilities_type.Name FORMAT_DEPTH_STENCIL;
     enum_constant public static final capabilities_type.Name FORMAT_R10G10B10A10;
     enum_constant public static final capabilities_type.Name FORMAT_R10G10B10A2;
     enum_constant public static final capabilities_type.Name FORMAT_R16G16B16A16_FLOAT;
+    enum_constant public static final capabilities_type.Name FORMAT_RGB16;
     enum_constant public static final capabilities_type.Name YUV_BL_10;
     enum_constant public static final capabilities_type.Name YUV_BL_8;
   }

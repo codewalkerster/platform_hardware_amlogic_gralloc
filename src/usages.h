@@ -20,10 +20,6 @@
 
 #include <assert.h>
 
-#if GRALLOC_ALLOCATOR_AIDL_VERSION > 0
-#include <aidl/android/hardware/graphics/common/BufferUsage.h>
-#endif
-
 #define GRALLOC_USAGE_PRIVATE_MASK (0xffff0000f0000000U)
 
 /*
@@ -146,32 +142,6 @@ typedef enum
 /* This usage should be used when using the AIDL allocator, otherwise use MALI_GRALLOC_USAGE_FRONTBUFFER */
 #define GRALLOC_USAGE_FRONTBUFFER static_cast<uint64_t>(1ULL << 32)
 
-#if !GRALLOC_HOST_BUILD
-
-#include <android/hardware/graphics/common/1.2/types.h>
-/* BufferUsage is not defined in 1.2/types.h as there are no changes from previous version in Android 12 and before*/
-namespace hidl_common = android::hardware::graphics::common::V1_1;
-
-static_assert(GRALLOC_USAGE_SW_WRITE_RARELY == static_cast<uint64_t>(hidl_common::BufferUsage::CPU_WRITE_RARELY));
-static_assert(GRALLOC_USAGE_SW_READ_MASK == static_cast<uint64_t>(hidl_common::BufferUsage::CPU_READ_MASK));
-static_assert(GRALLOC_USAGE_PROTECTED == static_cast<uint64_t>(hidl_common::BufferUsage::PROTECTED));
-static_assert(GRALLOC_USAGE_CURSOR == static_cast<uint64_t>(hidl_common::BufferUsage::COMPOSER_CURSOR));
-static_assert(GRALLOC_USAGE_HW_RENDER == static_cast<uint64_t>(hidl_common::BufferUsage::GPU_RENDER_TARGET));
-static_assert(GRALLOC_USAGE_HW_CAMERA_WRITE == static_cast<uint64_t>(hidl_common::BufferUsage::CAMERA_OUTPUT));
-static_assert(GRALLOC_USAGE_HW_CAMERA_READ == static_cast<uint64_t>(hidl_common::BufferUsage::CAMERA_INPUT));
-static_assert(GRALLOC_USAGE_HW_TEXTURE == static_cast<uint64_t>(hidl_common::BufferUsage::GPU_TEXTURE));
-static_assert(GRALLOC_USAGE_HW_VIDEO_ENCODER == static_cast<uint64_t>(hidl_common::BufferUsage::VIDEO_ENCODER));
-static_assert(GRALLOC_USAGE_HW_COMPOSER == static_cast<uint64_t>(hidl_common::BufferUsage::COMPOSER_OVERLAY));
-static_assert(GRALLOC_USAGE_SENSOR_DIRECT_DATA == static_cast<uint64_t>(hidl_common::BufferUsage::SENSOR_DIRECT_DATA));
-static_assert(GRALLOC_USAGE_GPU_DATA_BUFFER == static_cast<uint64_t>(hidl_common::BufferUsage::GPU_DATA_BUFFER));
-static_assert(GRALLOC_USAGE_DECODER == static_cast<uint64_t>(hidl_common::BufferUsage::VIDEO_DECODER));
-#if GRALLOC_ALLOCATOR_AIDL_VERSION > 0
-static_assert(GRALLOC_USAGE_FRONTBUFFER ==
-              static_cast<uint64_t>(aidl::android::hardware::graphics::common::BufferUsage::FRONT_BUFFER));
-#endif /* GRALLOC_ALLOCATOR_AIDL_VERSION > 0 */
-
-#endif /* !GRALLOC_HOST_BUILD */
-
 static const uint64_t STANDARD_USAGE = GRALLOC_USAGE_SW_READ_MASK | /* 0x0FU */
                                        GRALLOC_USAGE_SW_WRITE_MASK | /* 0xF0U */
                                        GRALLOC_USAGE_HW_TEXTURE | /* 1U << 8 */
@@ -219,6 +189,10 @@ static const uint64_t VALID_USAGE = STANDARD_USAGE | VENDOR_USAGE;
 static const uint64_t UNIVERSAL_USAGES =
     GRALLOC_USAGE_PROTECTED | GRALLOC_USAGE_SW_READ_MASK | GRALLOC_USAGE_SW_WRITE_MASK;
 
+/* Describes the camera (read and write) or sensor usages */
+static const uint64_t CAMERA_OR_SENSOR_USAGES =
+    GRALLOC_USAGE_HW_CAMERA_WRITE | GRALLOC_USAGE_HW_CAMERA_READ | GRALLOC_USAGE_SENSOR_DIRECT_DATA;
+
 /**
  * @brief Generates permitted usages for a format.
  *
@@ -242,7 +216,7 @@ static inline bool gralloc_usage_is_frontbuffer(const uint64_t usage)
 {
 	/* AFRC_RGBA_LUMA_CODING_SIZE_16 shares usage bits with FRONTBUFFER when using the HIDL allocator. */
 	return (usage & GRALLOC_USAGE_FRONTBUFFER) || ((usage & MALI_GRALLOC_USAGE_FRONTBUFFER) &&
-	       !(usage & MALI_GRALLOC_USAGE_AFRC_RGBA_LUMA_CODING_SIZE_SENTINEL));
+	                                               !(usage & MALI_GRALLOC_USAGE_AFRC_RGBA_LUMA_CODING_SIZE_SENTINEL));
 }
 
 /*

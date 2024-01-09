@@ -92,6 +92,12 @@ static consumers_t get_consumers(uint64_t usage)
 		{
 			consumers.add(MALI_GRALLOC_IP_GPU);
 		}
+
+		if (usage & (GRALLOC_USAGE_HW_CAMERA_READ | GRALLOC_USAGE_SENSOR_DIRECT_DATA))
+		{
+			consumers.add(MALI_GRALLOC_IP_CAM);
+		}
+
 		#ifdef GRALLOC_AML_EXTEND
 		if (consumers.empty() && (usage & (GRALLOC_USAGE_HW_COMPOSER)))
 		{
@@ -339,9 +345,8 @@ static bool is_subsampled_yuv(const internal_format_t format)
  */
 static inline bool is_afbc_multiplane_supported(const producers_t producers, const consumers_t consumers)
 {
-	return ip_t::support(producers, consumers, feature_t::AFBC_16X16) &&
-	       ip_t::support(producers, consumers, feature_t::AFBC_TILED_HEADERS) &&
-	       ip_t::support(producers, consumers, feature_t::AFBC_64X4) && producers.empty();
+	return ip_t::support(producers, consumers, feature_t::AFBC_TILED_HEADERS) &&
+	       ip_t::support(producers, consumers, feature_t::AFBC_64X4);
 }
 
 /*
@@ -363,6 +368,28 @@ static bool is_format_afbc_16_bits(const format_info_t &fmt_info)
 		}
 	}
 	return false;
+}
+
+/**
+ * @brief Given a HAL format, select the internal Gralloc format according to usage.
+ *
+ * @param req_format      [in]    HAL/internal format.
+ * @param usage           [in]    provided usage.
+ * @param descriptor_flags[in]    Descriptor flags.
+ *
+ * @return internal format corresponding to the Android HAL format (with specific alignment according to the usage).
+ */
+static uint32_t get_internal_format_with_usage(uint32_t req_format, uint64_t usage, uint32_t descriptor_flags)
+{
+	if ((descriptor_flags & HW_IMP_CAM_USAGE) == HW_IMP_CAM_USAGE)
+	{
+		if ((HAL_PIXEL_FORMAT_IMPLEMENTATION_DEFINED == req_format) &&
+		    (usage & (GRALLOC_USAGE_HW_CAMERA_WRITE | GRALLOC_USAGE_SENSOR_DIRECT_DATA | GRALLOC_USAGE_HW_CAMERA_READ)))
+		{
+			return MALI_GRALLOC_FORMAT_INTERNAL_RG16;
+		}
+	}
+	return get_internal_format(req_format);
 }
 
 /*
@@ -396,12 +423,6 @@ static format_support_flags is_format_supported(const format_info_t &fmt_info,
 			f_flags &= ~F_AFBC;
 		}
 
-		/* Check that multi-plane format supported by producers/consumers. */
-		if (fmt_info.npln > 1 && !is_afbc_multiplane_supported(producers, consumers))
-		{
-			f_flags &= ~F_AFBC;
-		}
-
 		/* Apply some additional restrictions from producers and consumers */
 		/* Some modifiers affect base format support */
 		if (fmt_info.is_yuv && !ip_t::support(producers, consumers, feature_t::AFBC_YUV))
@@ -416,8 +437,9 @@ static format_support_flags is_format_supported(const format_info_t &fmt_info,
 				f_flags &= ~F_AFBC;
 			}
 		}
-		/* Check for old devices that don't support AFBC with latest format */
-		if (is_format_afbc_16_bits(fmt_info) && !ip_t::support(producers, consumers, feature_t::AFBC_FORMAT_RGB16))
+
+		if (fmt_info.id == MALI_GRALLOC_FORMAT_INTERNAL_Y210 &&
+		    !ip_t::support(producers, consumers, feature_t::AFBC_FORMAT_Y210))
 		{
 			f_flags &= ~F_AFBC;
 		}
@@ -426,11 +448,6 @@ static format_support_flags is_format_supported(const format_info_t &fmt_info,
 	{
 		if (!fmt_info.afrc || (!ip_t::support(producers, consumers, feature_t::AFRC_ROT_LAYOUT) &&
 		                       !ip_t::support(producers, consumers, feature_t::AFRC_SCAN_LAYOUT)))
-		{
-			f_flags &= ~F_AFRC;
-		}
-		/* This checks on AFRC using bpp_afbc field */
-		if (is_format_afbc_16_bits(fmt_info) && !ip_t::support(producers, consumers, feature_t::AFRC_FORMAT_RGB16))
 		{
 			f_flags &= ~F_AFRC;
 		}
@@ -470,6 +487,17 @@ static format_support_flags is_format_supported(const format_info_t &fmt_info,
 		}
 		else if (fmt_info.id == MALI_GRALLOC_FORMAT_INTERNAL_RGBA_10101010 &&
 		         !ip_t::support(producers, consumers, feature_t::FORMAT_R10G10B10A10))
+		{
+			f_flags = F_NONE;
+		}
+		else if ((fmt_info.id == MALI_GRALLOC_FORMAT_INTERNAL_RAW16 ||
+		          fmt_info.id == MALI_GRALLOC_FORMAT_INTERNAL_RG16) &&
+		         !ip_t::support(producers, consumers, feature_t::FORMAT_RGB16))
+		{
+			f_flags = F_NONE;
+		}
+		else if (is_depth_stencil_format(fmt_info) &&
+		         !ip_t::support(producers, consumers, feature_t::FORMAT_DEPTH_STENCIL))
 		{
 			f_flags = F_NONE;
 		}
@@ -581,34 +609,52 @@ static internal_format_t validate_afbc_format(internal_format_t alloc_format, co
 /*
  * Calculates the data type which Gralloc uses internally per format and usage.
  *
- * @param hal_format [in]    Descriptor for base format.
- * @param usage      [in]    Buffer usage.
+ * @param fmt_info         [in]    Information for the base format for which to deduce support.
  *
  * @return mali_gralloc_format_data_type value.
  */
-mali_gralloc_format_data_type calc_format_data_type(const uint64_t hal_format, const uint64_t usage)
+static mali_gralloc_format_data_type calc_format_data_type(const format_info_t &fmt_info)
 {
-	/* TODO: GPUCORE-37452 - AFBC Bayer format support - add mechanism for the setter */
-	(void)hal_format;
-	(void)usage;
-	return mali_gralloc_format_data_type::UNORM;
+	mali_gralloc_format_data_type data_type = {};
+	switch (fmt_info.id)
+	{
+	case MALI_GRALLOC_FORMAT_INTERNAL_STENCIL_8:
+	case MALI_GRALLOC_FORMAT_INTERNAL_BLOB:
+	case MALI_GRALLOC_FORMAT_INTERNAL_RG16:
+	case MALI_GRALLOC_FORMAT_INTERNAL_RAW16:
+		data_type = mali_gralloc_format_data_type::UINT;
+		break;
+	case MALI_GRALLOC_FORMAT_INTERNAL_RGBA_16161616:
+		data_type = mali_gralloc_format_data_type::SFLOAT;
+		break;
+		data_type = mali_gralloc_format_data_type::UINT;
+		break;
+	case MALI_GRALLOC_FORMAT_INTERNAL_DEPTH_32F:
+		data_type = mali_gralloc_format_data_type::SFLOAT;
+		break;
+	default:
+		data_type = mali_gralloc_format_data_type::UNORM;
+		break;
+	}
+
+	return data_type;
 }
 
 /*
  * Derives a valid AFRC format (via modifiers) for all producers and consumers.
  *
- * @param format     [in]    Descriptor for base format.
- * @param usage      [in]    Buffer usage.
- * @param producers  [in]    Buffer producer capabilities (intersection).
- * @param consumers  [in]    Buffer consumer capabilities (intersection).
+ * @param format           [in]    Descriptor for base format.
+ * @param usage            [in]    Buffer usage.
+ * @param producers        [in]    Buffer producer capabilities (intersection).
+ * @param consumers        [in]    Buffer consumer capabilities (intersection).
  *
  * @return valid AFRC format, where modifiers are enabled (supported/preferred);
  *         base format without modifiers, otherwise
  */
-static internal_format_t get_afrc_format(const format_info_t &format, const uint64_t usage, const producers_t producers,
+static internal_format_t get_afrc_format(const format_info_t &format, uint64_t usage, const producers_t producers,
 	const consumers_t consumers)
 {
-	auto base_format = internal_format_t::from_android(format.id, calc_format_data_type(format.id, usage));
+	auto base_format = internal_format_t::from_android(format.id, calc_format_data_type(format));
 	auto alloc_format = base_format;
 
 	if (ip_t::support(producers, consumers, feature_t::AFRC_ROT_LAYOUT))
@@ -673,18 +719,18 @@ static internal_format_t get_afrc_format(const format_info_t &format, const uint
  * desirable) for the IP usage. Some format modifier combinations are not
  * compatible. See MALI_GRALLOC_INTFMT_* modifiers for more information.
  *
- * @param format     [in]    Descriptor for base format.
- * @param usage      [in]    Buffer usage.
- * @param producer   [in]    Buffer producers (write).
- * @param consumer   [in]    Buffer consumers (read).
+ * @param format           [in]    Descriptor for base format.
+ * @param usage            [in]    Buffer usage.
+ * @param producer         [in]    Buffer producers (write).
+ * @param consumer         [in]    Buffer consumers (read).
  *
  * @return valid AFBC format, where modifiers are enabled (supported/preferred);
  *         base format without modifiers, otherwise
  */
-static internal_format_t get_afbc_format(const format_info_t &format, const uint64_t usage, const producers_t producers,
+static internal_format_t get_afbc_format(const format_info_t &format, uint64_t usage, const producers_t producers,
 	const consumers_t consumers)
 {
-	const auto base_format = internal_format_t::from_android(format.id, calc_format_data_type(format.id, usage));
+	const auto base_format = internal_format_t::from_android(format.id, calc_format_data_type(format));
 
 	if (format.is_yuv)
 	{
@@ -731,6 +777,11 @@ static internal_format_t get_afbc_format(const format_info_t &format, const uint
 		if (gralloc_usage_is_frontbuffer(usage) && ip_t::support(producers, consumers, feature_t::AFBC_DOUBLE_BODY))
 		{
 			alloc_format.set_afbc_double_body();
+		}
+
+		if (format.npln > 1 && is_afbc_multiplane_supported(producers, consumers) && format.is_yuv)
+		{
+			alloc_format.set_afbc_64x4();
 		}
 	}
 
@@ -799,17 +850,18 @@ struct fmt_props_t
 /**
  * @brief Obtains support flags and modifiers for base format.
  *
- * @param fmt_info       [in]    Information for the base format for which to deduce support.
- * @param usage          [in]    Buffer usage.
- * @param producers      [in]    Producers (flags).
- * @param consumers      [in]    Consumers (flags).
+ * @param fmt_info         [in]    Information for the base format for which to deduce support.
+ * @param usage            [in]    Buffer usage.
+ * @param producers        [in]    Producers (flags).
+ * @param consumers        [in]    Consumers (flags).
+ * @param descriptor_flags [in]    Set of @ref buffer_descriptor_flags
  *
  * @return The @c fmt_props_t structure for the supported format, or @c std::nullopt
  */
-static std::optional<fmt_props_t> get_supported_format(const format_info_t &fmt_info, const uint64_t usage,
-	const producers_t producers, const consumers_t consumers)
+static std::optional<fmt_props_t> get_supported_format(const format_info_t &fmt_info, uint64_t usage,
+	const producers_t producers, const consumers_t consumers, uint32_t descriptor_flags)
 {
-	const auto base_format = internal_format_t::from_android(fmt_info.id, calc_format_data_type(fmt_info.id, usage));
+	const auto base_format = internal_format_t::from_android(fmt_info.id, calc_format_data_type(fmt_info));
 	const auto *fmt_ip_support = get_format_ip_support(fmt_info.id);
 	if (fmt_ip_support == nullptr)
 	{
@@ -832,13 +884,11 @@ static std::optional<fmt_props_t> get_supported_format(const format_info_t &fmt_
 		fmt_flags = is_format_supported(fmt_info, *fmt_ip_support, usage, producers, consumers_nodpu);
 	}
 
-#ifdef GRALLOC_HWC_FB_DISABLE_AFBC
-	if (GRALLOC_HWC_FB_DISABLE_AFBC && DISABLE_FRAMEBUFFER_HAL && (usage & GRALLOC_USAGE_HW_FB))
+	if ((descriptor_flags & HWC_FB_DISABLE_AFBC) && (usage & GRALLOC_USAGE_HW_FB))
 	{
 		/* Override capabilities to disable non linear formats for DRM HWC framebuffer surfaces. */
 		fmt_flags &= ~(F_AFBC | F_AFRC | F_BL_YUV);
 	}
-#endif
 
 	if (fmt_flags & F_AFRC)
 	{
@@ -947,6 +997,10 @@ static bool comparable_components(const format_info_t &f_old, const format_info_
 				return true;
 			}
 		}
+	}
+	else if (is_depth_stencil_format(f_old) && is_depth_stencil_format(f_new))
+	{
+		return (f_old.total_components() == f_new.total_components()) && (f_old.bps == f_new.bps);
 	}
 	else
 	{
@@ -1057,12 +1111,13 @@ uint64_t grade_format(const internal_format_t fmt, uint32_t req_format)
  * @param usage                 [in]    Buffer usage.
  * @param producers             [in]    Producers (flags).
  * @param consumers             [in]    Consumers (flags).
+ * @param descriptor_flags      [in]    Set of @ref buffer_descriptor_flags
  *
  * @return alloc_format, supported for usage;
  *         MALI_GRALLOC_FORMAT_INTERNAL_UNDEFINED, otherwise
  */
-static internal_format_t get_best_format(const uint32_t req_base_format, const uint64_t usage,
-	const producers_t producers, const consumers_t consumers)
+static internal_format_t get_best_format(uint32_t req_base_format, uint64_t usage, producers_t producers,
+	consumers_t consumers, uint32_t descriptor_flags)
 {
 	MALI_GRALLOC_LOGV("req_base_format: 0x%" PRIx32, req_base_format);
 	CHECK_NE(req_base_format, MALI_GRALLOC_FORMAT_INTERNAL_UNDEFINED);
@@ -1089,7 +1144,7 @@ static internal_format_t get_best_format(const uint32_t req_base_format, const u
 
 		MALI_GRALLOC_LOGV("Compatible: Base-format: 0x%" PRIx32, fmt_info.id);
 
-		if (auto fmt = get_supported_format(fmt_info, usage, producers, consumers))
+		if (auto fmt = get_supported_format(fmt_info, usage, producers, consumers, descriptor_flags))
 		{
 			const uint64_t sup_fmt_grade = grade_format(fmt->format, req_base_format);
 			if (sup_fmt_grade)
@@ -1139,7 +1194,11 @@ static internal_format_t get_best_format(const uint32_t req_base_format, const u
 
 static bool is_format_multiplane_afbc(internal_format_t format)
 {
-	return format.is_afbc() && format.get_afbc_64x4() && format.get_afbc_tiled_headers();
+	return format.is_afbc() &&
+	       // YUV formats require tiled wideblock
+	       ((format.base_info().is_yuv && format.get_afbc_64x4() && format.get_afbc_tiled_headers()) ||
+	        // Otherwise, just check the plane amount and verify that specific YUV multi-plane modifiers do not apply
+	        (format.base_info().npln > 1 && !(format.get_afbc_64x4() || format.get_afbc_tiled_headers())));
 }
 
 /**
@@ -1164,7 +1223,10 @@ static bool check_modifiers_against_format(const format_info_t &format_info, con
 	}
 	else if (candidate_format.is_afbc())
 	{
-		if (format_info.afbc && (format_info.npln == 1 || is_format_multiplane_afbc(candidate_format)))
+		/* Exclude afbc 3 plane format as it's not supported. */
+		bool is_multiplane_afbc_requested = is_format_multiplane_afbc(candidate_format);
+		if (format_info.afbc && ((format_info.npln == 1 && !is_multiplane_afbc_requested) ||
+		                         (format_info.npln == 2 && is_multiplane_afbc_requested)))
 		{
 			/* Requested format modifiers are suitable for base format. */
 			return true;
@@ -1208,7 +1270,7 @@ static internal_format_t select_forced_format(const mali_gralloc_android_format 
 	/* Check that the format modifiers are supported for this format. */
 	if (!check_modifiers_against_format(*format_info, candidate_format))
 	{
-		MALI_GRALLOC_LOGE("Invalid modifiers for req_format = 0x%" PRIx32, req_format);
+		MALI_GRALLOC_LOGE("Invalid modifiers for requested format: %s", int_format.str().c_str());
 		return internal_format_t::invalid;
 	}
 
@@ -1226,7 +1288,7 @@ static internal_format_t select_forced_format(const mali_gralloc_android_format 
 static internal_format_t select_best_format(const buffer_descriptor_t &descriptor, const uint64_t usage)
 {
 	const mali_gralloc_android_format req_format = descriptor.hal_format;
-	const uint32_t req_base_format = get_internal_format(req_format);
+	const uint32_t req_base_format = get_internal_format_with_usage(req_format, usage, descriptor.flags);
 	const auto *format_info = get_format_info(req_base_format);
 
 	if (req_base_format == MALI_GRALLOC_FORMAT_INTERNAL_UNDEFINED || format_info == nullptr)
@@ -1296,11 +1358,18 @@ static internal_format_t select_best_format(const buffer_descriptor_t &descripto
 		return internal_format_t::invalid;
 	}
 
-	auto alloc_format = get_best_format(format_info->id, usage, producers, consumers);
+	if (((req_format == GRALLOC_PIXEL_FORMAT_R16_UINT) || (req_format == GRALLOC_PIXEL_FORMAT_R16G16_UINT)) &&
+	    ((descriptor.flags & SUPPORTS_R16_RG16) == 0))
+	{
+		MALI_GRALLOC_LOGE("Requested format ( 0x%x ) is not supported with this allocator, flags( 0x%x ) .", req_format,
+		                  descriptor.flags);
+		return internal_format_t::invalid;
+	}
+
+	auto alloc_format = get_best_format(format_info->id, usage, producers, consumers, descriptor.flags);
 
 	/* Some display controllers expect the framebuffer to be in BGRX format, hence we force the format to avoid colour swap issues. */
-#if defined(GRALLOC_HWC_FORCE_BGRA_8888) && defined(DISABLE_FRAMEBUFFER_HAL)
-	if (GRALLOC_HWC_FORCE_BGRA_8888 && DISABLE_FRAMEBUFFER_HAL && (usage & GRALLOC_USAGE_HW_FB))
+	if ((descriptor.flags & HWC_FORCE_BGRA_8888) && (usage & GRALLOC_USAGE_HW_FB))
 	{
 		if (alloc_format.get_base() != HAL_PIXEL_FORMAT_BGRA_8888 &&
 		    usage & (GRALLOC_USAGE_SW_WRITE_MASK | GRALLOC_USAGE_SW_READ_MASK))
@@ -1311,7 +1380,6 @@ static internal_format_t select_best_format(const buffer_descriptor_t &descripto
 		alloc_format =
 		    internal_format_t::from_android(HAL_PIXEL_FORMAT_BGRA_8888, mali_gralloc_format_data_type::UNORM);
 	}
-#endif
 
 	return alloc_format;
 }

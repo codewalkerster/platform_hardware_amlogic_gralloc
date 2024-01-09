@@ -32,6 +32,14 @@ enum buffer_descriptor_flags : uint32_t
 	GPU_DATA_BUFFER_WITH_ANY_FORMAT = 1,
 	USE_AIDL_FRONTBUFFER_USAGE = 1 << 1,
 	SUPPORTS_R8 = 1 << 2,
+	HWC_FB_DISABLE_AFBC = 1 << 3,
+	HWC_FORCE_BGRA_8888 = 1 << 4,
+	/* This flag is used to mark support in R16 and RG16 as part
+	of A14 formats*/
+	SUPPORTS_R16_RG16 = 1 << 5,
+	/* This flag is used to mark support in A13 special
+	use case of IMPLEMENTATION_DEFINED format */
+	HW_IMP_CAM_USAGE = 1 << 6,
 };
 
 /* A buffer_descriptor contains the requested parameters for the buffer

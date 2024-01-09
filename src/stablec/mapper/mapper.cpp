@@ -22,6 +22,7 @@
 #include <unordered_map>
 #include <vector>
 #include <memory>
+#include <android-base/unique_fd.h>
 
 #include "aidl/android/hardware/graphics/common/BufferUsage.h"
 #include "aidl/android/hardware/graphics/common/PixelFormat.h"
@@ -101,7 +102,7 @@ GrallocMapperV5::GrallocMapperV5()
 }
 
 AIMapper_Error GrallocMapperV5::importBuffer(const native_handle_t *_Nonnull handle,
-                                             buffer_handle_t _Nullable *_Nonnull outBufferHandle)
+	buffer_handle_t _Nullable *_Nonnull outBufferHandle)
 {
 	imported_handle *imported_handle;
 	auto err = common::import_buffer(handle, &imported_handle);
@@ -123,9 +124,10 @@ AIMapper_Error GrallocMapperV5::freeBuffer(buffer_handle_t _Nonnull buffer)
 }
 
 AIMapper_Error GrallocMapperV5::lock(buffer_handle_t _Nonnull buffer, uint64_t cpuUsage, ARect accessRegion,
-                                     int acquireFence, void *_Nullable *_Nonnull outData)
+	int acquireFence, void *_Nullable *_Nonnull outData)
 {
-	auto err = common::lock(buffer, cpuUsage, accessRegion, acquireFence, outData);
+	android::base::unique_fd owned_acquire_fence{ acquireFence };
+	auto err = common::lock(buffer, cpuUsage, accessRegion, owned_acquire_fence.get(), outData);
 	return mapper_error_to_stablec_error(err);
 }
 
@@ -148,8 +150,7 @@ AIMapper_Error GrallocMapperV5::rereadLockedBuffer(buffer_handle_t _Nonnull buff
 }
 
 AIMapper_Error GrallocMapperV5::getReservedRegion(buffer_handle_t _Nonnull buffer,
-                                                  void *_Nullable *_Nonnull outReservedRegion,
-                                                  uint64_t *_Nonnull outReservedSize)
+void *_Nullable *_Nonnull outReservedRegion, uint64_t *_Nonnull outReservedSize)
 {
 	auto err = common::get_reserved_region(buffer, outReservedRegion, *outReservedSize);
 	return mapper_error_to_stablec_error(err);
@@ -318,7 +319,7 @@ static common::metadata_encoder get_encode_function(common::metadata_descriptor 
 }
 
 int32_t GrallocMapperV5::getMetadata(buffer_handle_t _Nonnull buffer, AIMapper_MetadataType metadataType,
-                                     void *_Nonnull outData, size_t outDataSize)
+	void *_Nonnull outData, size_t outDataSize)
 {
 	auto common_metadata = common::metadata_descriptor{ metadataType.name, metadataType.value };
 
@@ -339,7 +340,7 @@ int32_t GrallocMapperV5::getMetadata(buffer_handle_t _Nonnull buffer, AIMapper_M
 }
 
 int32_t GrallocMapperV5::getStandardMetadata(buffer_handle_t _Nonnull buffer, int64_t standardMetadataType,
-                                             void *_Nonnull outData, size_t outDataSize)
+	void *_Nonnull outData, size_t outDataSize)
 {
 	AIMapper_MetadataType standard_metadata{ common::STANDARD_METADATA_NAME, standardMetadataType };
 	return getMetadata(buffer, standard_metadata, outData, outDataSize);
@@ -421,7 +422,7 @@ common::metadata_decoder get_decode_function(const common::metadata_descriptor &
 }
 
 AIMapper_Error GrallocMapperV5::setMetadata(buffer_handle_t _Nonnull buffer, AIMapper_MetadataType metadataType,
-                                            const void *_Nonnull metadata, size_t metadataSize)
+	const void *_Nonnull metadata, size_t metadataSize)
 {
 	auto common_metadata = common::metadata_descriptor{ metadataType.name, metadataType.value };
 	auto err = common::set(buffer, common_metadata, reinterpret_cast<const uint8_t *>(metadata), metadataSize,
@@ -431,14 +432,14 @@ AIMapper_Error GrallocMapperV5::setMetadata(buffer_handle_t _Nonnull buffer, AIM
 }
 
 AIMapper_Error GrallocMapperV5::setStandardMetadata(buffer_handle_t _Nonnull buffer, int64_t standardMetadataType,
-                                                    const void *_Nonnull metadata, size_t metadataSize)
+	const void *_Nonnull metadata, size_t metadataSize)
 {
 	AIMapper_MetadataType standard_metadata{ common::STANDARD_METADATA_NAME, standardMetadataType };
 	return setMetadata(buffer, standard_metadata, metadata, metadataSize);
 }
 
 AIMapper_Error GrallocMapperV5::getTransportSize(buffer_handle_t _Nonnull buffer, uint32_t *_Nonnull outNumFds,
-                                                 uint32_t *_Nonnull outNumInts)
+	uint32_t *_Nonnull outNumInts)
 {
 	int num_fds = 0;
 	int num_ints = 0;
@@ -454,8 +455,8 @@ AIMapper_Error GrallocMapperV5::getTransportSize(buffer_handle_t _Nonnull buffer
 }
 
 AIMapper_Error GrallocMapperV5::listSupportedMetadataTypes(
-    const AIMapper_MetadataTypeDescription *_Nullable *_Nonnull outDescriptionList,
-    size_t *_Nonnull outNumberOfDescriptions)
+	const AIMapper_MetadataTypeDescription *_Nullable *_Nonnull outDescriptionList,
+	size_t *_Nonnull outNumberOfDescriptions)
 {
 	*outDescriptionList = m_stablec_metadata.data();
 	*outNumberOfDescriptions = m_stablec_metadata.size();
@@ -463,8 +464,7 @@ AIMapper_Error GrallocMapperV5::listSupportedMetadataTypes(
 }
 
 AIMapper_Error GrallocMapperV5::dumpBuffer(buffer_handle_t _Nonnull bufferHandle,
-                                           AIMapper_DumpBufferCallback _Nonnull dumpBufferCallback,
-                                           void *_Null_unspecified context)
+	AIMapper_DumpBufferCallback _Nonnull dumpBufferCallback, void *_Null_unspecified context)
 {
 	common::buffer_dump buf_dump;
 	auto err = common::dump_buffer(bufferHandle, buf_dump, standard_handlers, true);
@@ -483,8 +483,7 @@ AIMapper_Error GrallocMapperV5::dumpBuffer(buffer_handle_t _Nonnull bufferHandle
 }
 
 AIMapper_Error GrallocMapperV5::dumpAllBuffers(AIMapper_BeginDumpBufferCallback _Nonnull beginDumpBufferCallback,
-                                               AIMapper_DumpBufferCallback _Nonnull dumpBufferCallback,
-                                               void *_Null_unspecified context)
+	AIMapper_DumpBufferCallback _Nonnull dumpBufferCallback, void *_Null_unspecified context)
 {
 	std::vector<common::buffer_dump> buf_dumps;
 	auto err = common::dump_buffers(buf_dumps, standard_handlers, true);

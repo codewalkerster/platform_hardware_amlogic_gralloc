@@ -38,7 +38,8 @@
 //meson graphics changes start
 #define PRIVATE_HANDLE_NUM_FDS 3
 //meson graphics changes end
-#define PRIVATE_HANDLE_NUM_INTS ((sizeof(private_handle_t) - sizeof(native_handle_t)) / sizeof(int) - PRIVATE_HANDLE_NUM_FDS)
+#define PRIVATE_HANDLE_NUM_INTS \
+	((sizeof(private_handle_t) - sizeof(native_handle_t)) / sizeof(int) - PRIVATE_HANDLE_NUM_FDS)
 
 /*
  * Maximum number of pixel format planes.
@@ -114,8 +115,6 @@ enum class handle_type : int
  *
  * It is assumed the inherited native_handle memory is placed before the private_handle memory.
  * For the implementation to function correctly, we must ensure:
- *  - The same memory layout between 64-bit and 32-bit processes. Pointers are padded to the
- *    size of a uint64_t to ensure offsetof returns the same value.
  *  - The structure is trivially copyable, that is, able to be copied using memcpy.
  *  - The structure is trivially destructible since the destructor will never be called.
  */
@@ -150,22 +149,20 @@ struct private_handle_t : public native_handle
 		LOCK_STATE_READ_MASK = 0x3FFFFFFF
 	};
 
-	static constexpr handle_type this_type = handle_type::raw;
-
 	/*
 	 * Shared file descriptor for dma_buf sharing. This must be the first element in the
 	 * structure so that binder knows where it is and can properly share it between
 	 * processes.
 	 * DO NOT MOVE THIS ELEMENT!
 	 */
-	int share_fd{-1};
-	int share_attr_fd{-1};
+	int share_fd{ -1 };
+	int share_attr_fd{ -1 };
 //meson graphics changes start
-	int am_extend_fd{-1};
+	int am_extend_fd{ -1 };
 //meson graphics changes end
 
 	// ints
-	int magic{sMagic};
+	int magic{ sMagic };
 	int flags{};
 
 	/*
@@ -220,13 +217,15 @@ struct private_handle_t : public native_handle
 	uint64_t attr_size{};
 
 	uint64_t reserved_region_size{};
-	handle_type type{handle_type::raw};
+	handle_type type{ handle_type::raw };
 
 	/**
 	 * This magic number is used to check that the native_handle passed to Gralloc is our private_handle_t type.
 	 * The value is chosen arbitrarily.
 	 */
 	static const int sMagic = 0x3141592;
+
+	static constexpr handle_type this_type = handle_type::raw;
 
 	private_handle_t(int in_flags, int in_size, uint64_t in_consumer_usage, uint64_t in_producer_usage, int in_shared_fd,
 	                 int in_req_format, internal_format_t in_alloc_format, int in_width, int in_height,
@@ -381,7 +380,7 @@ static inline unique_imported_handle make_imported_handle(private_handle_t *raw_
 	new_handle->numInts = PRIVATE_HANDLE_NUM_INTS;
 	new_handle->numFds = 0;
 
-	auto import_handle = unique_imported_handle{static_cast<imported_handle *>(new_handle)};
+	auto import_handle = unique_imported_handle{ static_cast<imported_handle *>(new_handle) };
 
 	/* Clone file descriptors with care. */
 	for (int i = 0; i < PRIVATE_HANDLE_NUM_FDS; ++i)

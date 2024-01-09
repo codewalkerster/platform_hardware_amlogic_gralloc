@@ -117,9 +117,9 @@ static rect_t get_afbc_sb_size(AllocBaseType alloc_base_type)
  *
  * See alloc_type_t for more information.
  */
-static rect_t get_afbc_sb_size(alloc_type_t alloc_type, const uint8_t plane)
+static rect_t get_afbc_sb_size(alloc_type_t alloc_type, const format_info_t &format, uint8_t plane)
 {
-	if (plane > 0 && alloc_type.is_afbc() && alloc_type.is_multi_plane)
+	if (plane > 0 && alloc_type.is_afbc() && alloc_type.is_multi_plane && format.is_yuv)
 	{
 		return get_afbc_sb_size(AllocBaseType::AFBC_EXTRAWIDEBLK);
 	}
@@ -171,7 +171,7 @@ std::optional<alloc_type_t> get_alloc_type(const internal_format_t format, const
 		{
 			alloc_type.is_tiled = true;
 
-			if (format_info->npln > 1 && !format.get_afbc_64x4())
+			if (format_info->npln > 1 && !format.get_afbc_64x4() && format_info->is_yuv)
 			{
 				MALI_GRALLOC_LOGW("Extra-wide AFBC must be signalled for multi-plane formats. "
 				                  "Falling back to single plane AFBC.");
@@ -185,12 +185,12 @@ std::optional<alloc_type_t> get_alloc_type(const internal_format_t format, const
 		}
 		else
 		{
-			if (format_info->npln > 1)
+			if (format_info->is_yuv && format_info->npln > 1)
 			{
-				MALI_GRALLOC_LOGW("Multi-plane AFBC is not supported without tiling. "
+				MALI_GRALLOC_LOGW("Multi-plane AFBC for YUV is not supported without tiling. "
 				                  "Falling back to single plane AFBC.");
+				alloc_type.is_multi_plane = false;
 			}
-			alloc_type.is_multi_plane = false;
 		}
 
 		if (format.get_afbc_64x4() && !alloc_type.is_tiled)
@@ -300,10 +300,10 @@ static int max(int a, int b, int c, int d)
  * NOTE: pixel stride, where defined for format, is
  * incorporated into allocation dimensions.
  */
-static void get_pixel_w_h(uint32_t *const width, uint32_t *const height, const format_info_t format,
+static void get_pixel_w_h(uint32_t *const width, uint32_t *const height, const format_info_t &format,
 						  const alloc_type_t alloc_type, const uint8_t plane, bool has_cpu_usage)
 {
-	const rect_t sb = get_afbc_sb_size(alloc_type, plane);
+	const rect_t sb = get_afbc_sb_size(alloc_type, format, plane);
 
 	/*
 	 * Round-up plane dimensions, to multiple of:
@@ -316,7 +316,7 @@ static void get_pixel_w_h(uint32_t *const width, uint32_t *const height, const f
 	/*
 	 * Sub-sample (sub-sampled) planes.
 	 */
-	if (plane > 0)
+	if (plane > 0 && format.is_yuv)
 	{
 		*width /= format.hsub;
 		*height /= format.vsub;
@@ -385,6 +385,7 @@ static void get_pixel_w_h(uint32_t *const width, uint32_t *const height, const f
 	{
 		pixel_align_w = pixel_align_h = 16;
 	}
+
 	*width = GRALLOC_ALIGN(*width, max(1, pixel_align_w, format.tile_size));
 	*height = GRALLOC_ALIGN(*height, max(1, pixel_align_h, format.tile_size));
 }
@@ -474,7 +475,7 @@ static void update_yv12_stride(int8_t plane, uint32_t luma_stride, uint32_t stri
  *                                offset, byte stride and allocation width and height.
  */
 static void calc_allocation_size(const int width, const int height, const alloc_type_t alloc_type,
-								 const format_info_t format, const uint64_t usage, int *const pixel_stride,
+								 const format_info_t &format, const uint64_t usage, int *const pixel_stride,
 								 size_t *const size, plane_layout &plane_info)
 {
 	plane_info[0].offset = 0;
@@ -617,7 +618,7 @@ static void calc_allocation_size(const int width, const int height, const alloc_
 		int body_size = 0;
 		if (alloc_type.is_afbc())
 		{
-			const rect_t sb = get_afbc_sb_size(alloc_type, plane);
+			const rect_t sb = get_afbc_sb_size(alloc_type, format, plane);
 			const int sb_bytes = GRALLOC_ALIGN((format.bpp_afbc[plane] * sb.width * sb.height) / 8, 128);
 			body_size = sb_num * sb_bytes;
 
@@ -680,7 +681,7 @@ static void calc_allocation_size(const int width, const int height, const alloc_
 		MALI_GRALLOC_LOGV("AFBC Header size: %d", header_size);
 
 		/*
-		 * Set offset for separate chroma planes.
+		 * Set offset for separate planes.
 		 */
 		if (plane > 0)
 		{
@@ -722,6 +723,14 @@ static bool validate_format(const format_info_t *const format, const alloc_type_
 		{
 			MALI_GRALLOC_LOGE("ERROR: Format (%" PRIx32 ", num planes: %u) is incompatible with %s-plane AFBC request",
 			                  format->id, format->npln, (alloc_type.is_multi_plane) ? "multi" : "single");
+			return false;
+		}
+		/* Enforce consistency between AFBC allocation type and plane count.
+		 */
+		else if ((format->npln == 1 && (alloc_type.primary_type == AllocBaseType::AFBC_EXTRAWIDEBLK)))
+		{
+			MALI_GRALLOC_LOGE("ERROR: Format (%" PRIx32 ", num planes: %u) is incompatible with AFBC request type: %d",
+			                  format->id, format->npln, alloc_type.primary_type);
 			return false;
 		}
 	}

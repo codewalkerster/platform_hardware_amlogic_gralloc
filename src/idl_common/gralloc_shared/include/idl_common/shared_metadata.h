@@ -27,6 +27,7 @@
 
 #include <aidl/arm/graphics/ChromaSiting.h>
 #include <aidl/arm/graphics/DataType.h>
+#include <aidl/arm/graphics/PlaneLayoutComponentType.h>
 
 namespace arm::mapper::common
 {
@@ -41,11 +42,22 @@ using aidl::android::hardware::graphics::common::Smpte2086;
 #define GRALLOC_ARM_CHROMA_SITING_TYPE_NAME "arm.graphics.ChromaSiting"
 #define GRALLOC_ARM_FORMAT_DATA_TYPE_NAME "arm.graphics.DataType"
 
+#define GRALLOC_ARM_PLANE_LAYOUT_COMPONENT_TYPE_NAME "arm.graphics.PlaneLayoutComponentType"
+
 const static ExtendableType ChromaSiting_CositedVertical{
 	GRALLOC_ARM_CHROMA_SITING_TYPE_NAME, static_cast<int64_t>(aidl::arm::graphics::ChromaSiting::COSITED_VERTICAL)
 };
 const static ExtendableType ChromaSiting_CositedBoth{
 	GRALLOC_ARM_CHROMA_SITING_TYPE_NAME, static_cast<int64_t>(aidl::arm::graphics::ChromaSiting::COSITED_BOTH)
+};
+
+const static aidl::android::hardware::graphics::common::ExtendableType PlaneLayoutComponentType_DEPTH{
+	GRALLOC_ARM_PLANE_LAYOUT_COMPONENT_TYPE_NAME,
+	static_cast<int64_t>(aidl::arm::graphics::PlaneLayoutComponentType::DEPTH)
+};
+const static aidl::android::hardware::graphics::common::ExtendableType PlaneLayoutComponentType_STENCIL{
+	GRALLOC_ARM_PLANE_LAYOUT_COMPONENT_TYPE_NAME,
+	static_cast<int64_t>(aidl::arm::graphics::PlaneLayoutComponentType::STENCIL)
 };
 
 void shared_metadata_init(void *memory, std::string_view name, Dataspace dataspace,

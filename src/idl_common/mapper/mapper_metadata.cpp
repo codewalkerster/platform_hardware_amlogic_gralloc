@@ -62,6 +62,9 @@ static aidl::arm::graphics::DataType data_type_internal_to_aidl(mali_gralloc_for
 	case mali_gralloc_format_data_type::SINT:
 		return (aidl::arm::graphics::DataType::SINT);
 		break;
+	case mali_gralloc_format_data_type::SFLOAT:
+		return (aidl::arm::graphics::DataType::SFLOAT);
+		break;
 	default:
 		return (aidl::arm::graphics::DataType::UNKNOWN);
 		break;
@@ -85,8 +88,11 @@ mapper_error get_metadata(const private_handle_t *handle, const metadata_descrip
 		switch (metadata.get_standard_metadata_type_value())
 		{
 		case StandardMetadataType::BUFFER_ID:
-			err = encode_fn(&handle->backing_store_id, &output);
+		{
+			uint64_t backing_store_id = handle->backing_store_id;
+			err = encode_fn(&backing_store_id, &output);
 			break;
+		}
 		case StandardMetadataType::NAME:
 		{
 			auto import = handle_cast<imported_handle>(handle);
@@ -115,11 +121,17 @@ mapper_error get_metadata(const private_handle_t *handle, const metadata_descrip
 			break;
 		}
 		case StandardMetadataType::LAYER_COUNT:
-			err = encode_fn(&handle->layer_count, &output);
+		{
+			auto layer_count = static_cast<uint64_t>(handle->layer_count);
+			err = encode_fn(&layer_count, &output);
 			break;
+		}
 		case StandardMetadataType::PIXEL_FORMAT_REQUESTED:
-			err = encode_fn(&handle->req_format, &output);
+		{
+			auto req_format = static_cast<int32_t>(handle->req_format);
+			err = encode_fn(&req_format, &output);
 			break;
+		}
 		case StandardMetadataType::PIXEL_FORMAT_FOURCC:
 		{
 			uint32_t fourcc = drm_fourcc_from_handle(handle);
@@ -128,7 +140,7 @@ mapper_error get_metadata(const private_handle_t *handle, const metadata_descrip
 		}
 		case StandardMetadataType::PIXEL_FORMAT_MODIFIER:
 		{
-			auto mod = drm_modifier_from_handle(handle);
+			uint64_t mod = drm_modifier_from_handle(handle);
 			err = encode_fn(&mod, &output);
 			break;
 		}
@@ -155,7 +167,7 @@ mapper_error get_metadata(const private_handle_t *handle, const metadata_descrip
 		case StandardMetadataType::COMPRESSION:
 		{
 			ExtendableType compression;
-			const auto internal_format = handle->alloc_format;
+			const internal_format_t internal_format = handle->alloc_format;
 			if (internal_format.is_afbc())
 			{
 				compression = Compression_AFBC;
@@ -334,7 +346,6 @@ mapper_error get_metadata(const private_handle_t *handle, const metadata_descrip
 			err = encode_fn(&smpte2094_40, &output);
 			break;
 		}
-#if PLATFORM_SDK_VERSION >= 33
 		case StandardMetadataType::SMPTE2094_10:
 		{
 			auto import = handle_cast<imported_handle>(handle);
@@ -350,7 +361,6 @@ mapper_error get_metadata(const private_handle_t *handle, const metadata_descrip
 			err = encode_fn(&smpte2094_10, &output);
 			break;
 		}
-#endif
 #if defined(GRALLOC_STABLEC_MAPPER_ENABLED) && GRALLOC_STABLEC_MAPPER_ENABLED == 1
 		case StandardMetadataType::STRIDE:
 		{
@@ -601,7 +611,6 @@ mapper_error set_metadata(const imported_handle *handle, const metadata_descript
 			}
 			break;
 		}
-#if PLATFORM_SDK_VERSION >= 33
 		case StandardMetadataType::SMPTE2094_10:
 		{
 			std::optional<std::vector<uint8_t>> smpte2094_10;
@@ -616,7 +625,6 @@ mapper_error set_metadata(const imported_handle *handle, const metadata_descript
 			}
 			break;
 		}
-#endif
 		case StandardMetadataType::CROP:
 		{
 			std::vector<Rect> crops;

@@ -52,7 +52,7 @@ hw_gralloc_go_defaults {
     name: "gralloc_go_defaults",
 }
 soong_config_module_type {
-    name: "arm_gralloc_cc_defaults",
+    name: "arm_gralloc_config_cc_defaults",
     module_type: "cc_defaults",
     config_namespace: "arm_gralloc",
     variables: [
@@ -82,37 +82,11 @@ soong_config_string_variable {
     ],
 }
 
-arm_gralloc_cc_defaults {
-    name: "arm_gralloc_defaults",
-    defaults: ["arm_gralloc_common_defaults"],
-    owner: "arm",
-    vendor: true,
-    proprietary: true,
-    cflags: [
-        "-Wundef",
-        "-Werror",
-        "-DDISABLE_FRAMEBUFFER_HAL=1",
-        "-Wunused-variable",
-    ],
+arm_gralloc_config_cc_defaults {
+    name: "arm_gralloc_config_defaults",
     product_variables: {
         platform_sdk_version: {
             cflags: ["-DPLATFORM_SDK_VERSION=%d"],
-        },
-    },
-    header_libs: [
-        "libgralloc_headers",
-        "libgralloc_headers_internal",
-    ],
-    target: {
-        android: {
-            cflags: [
-                "-DGRALLOC_HOST_BUILD=0",
-            ],
-        },
-        host: {
-            cflags: [
-                "-DGRALLOC_HOST_BUILD=1",
-            ],
         },
     },
     soong_config_variables: {
@@ -144,4 +118,21 @@ arm_gralloc_cc_defaults {
             },
         },
     },
+}
+
+cc_defaults {
+    name: "arm_gralloc_defaults",
+    defaults: [
+        "arm_gralloc_common_defaults",
+        "arm_gralloc_internal_headers_defaults",
+        "arm_gralloc_headers_defaults",
+    ],
+    owner: "arm",
+    vendor: true,
+    proprietary: true,
+    cflags: [
+        "-Wundef",
+        "-Werror",
+        "-Wunused-variable",
+    ],
 }

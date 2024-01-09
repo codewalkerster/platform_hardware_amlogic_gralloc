@@ -94,7 +94,8 @@ const std::vector<format_info_t> formats = {
 		.hsub = 0, .vsub = 0, .align_w = 1, .align_h = 1, ALIGN_W_CPU_DEFAULT,
 		.tile_size = 1, .has_alpha = true, .is_rgb = true, .is_yuv = false,
 		.afbc = true, .linear = true, .yuv_transform = true, .flex = false, .block_linear = false, .afrc = true,
-		.permitted_usage = add_universal_usages(STANDARD_USAGE),
+		/* Disable HWComposer compatibility due to no support for it in surfaceflinger */
+		.permitted_usage = add_universal_usages(STANDARD_USAGE) & (~GRALLOC_USAGE_HW_COMPOSER),
 	},
 	{
 		.id = MALI_GRALLOC_FORMAT_INTERNAL_Y8,
@@ -128,15 +129,7 @@ const std::vector<format_info_t> formats = {
 		.npln = 1, .ncmp = { 2, 0, 0 }, .bps = 16, .bpp_afbc = { 32, 0, 0 }, .bpp = { 32, 0, 0 },
 		.hsub = 0, .vsub = 0, .align_w = 1, .align_h = 1, ALIGN_W_CPU_DEFAULT,
 		.tile_size = 1, .has_alpha = false, .is_rgb = true, .is_yuv = false,
-		.afbc = true, .linear = true, .yuv_transform = false, .flex = true, .block_linear = false, .afrc = true,
-		.permitted_usage = add_universal_usages(STANDARD_USAGE),
-	},
-	{
-		.id = MALI_GRALLOC_FORMAT_INTERNAL_R16,
-		.npln = 1, .ncmp = { 2, 0, 0 }, .bps = 16, .bpp_afbc = { 16, 0, 0 }, .bpp = { 16, 0, 0 },
-		.hsub = 0, .vsub = 0, .align_w = 1, .align_h = 1, ALIGN_W_CPU_DEFAULT,
-		.tile_size = 1, .has_alpha = false, .is_rgb = true, .is_yuv = false,
-		.afbc = true, .linear = true, .yuv_transform = false, .flex = true, .block_linear = false, .afrc = true,
+		.afbc = true, .linear = true, .yuv_transform = false, .flex = true, .block_linear = false, .afrc = false,
 		.permitted_usage = add_universal_usages(STANDARD_USAGE),
 	},
 	{
@@ -318,10 +311,10 @@ const std::vector<format_info_t> formats = {
 	/* Depth and Stencil */
 	{
 		.id = MALI_GRALLOC_FORMAT_INTERNAL_DEPTH_16,
-		.npln = 1, .ncmp = { 1, 0, 0 }, .bps = 16, .bpp_afbc = { 0, 0, 0}, .bpp = { 16, 0, 0 },
+		.npln = 1, .ncmp = { 1, 0, 0 }, .bps = 16, .bpp_afbc = { 16, 0, 0}, .bpp = { 16, 0, 0 },
 		.hsub = 0, .vsub = 0, .align_w = 1, .align_h = 1, ALIGN_W_CPU_DEFAULT,
 		.tile_size = 1, .has_alpha = false, .is_rgb = false, .is_yuv = false,
-		.afbc = false, .linear = true, .yuv_transform = false, .flex = false, .block_linear = false, .afrc = false,
+		.afbc = true, .linear = true, .yuv_transform = false, .flex = false, .block_linear = false, .afrc = false,
 		.permitted_usage = add_universal_usages(STANDARD_USAGE),
 	},
 	{
@@ -341,11 +334,19 @@ const std::vector<format_info_t> formats = {
 		.permitted_usage = add_universal_usages(STANDARD_USAGE),
 	},
 	{
-		.id = MALI_GRALLOC_FORMAT_INTERNAL_DEPTH_32F,
-		.npln = 1, .ncmp = { 1, 0, 0 }, .bps = 32, .bpp_afbc = { 0, 0, 0 }, .bpp = { 32, 0, 0 },
+		.id = MALI_GRALLOC_FORMAT_INTERNAL_DEPTH_24_STENCIL_8_AFBC,
+		.npln = 2, .ncmp = { 1, 1, 0 }, .bps = 24, .bpp_afbc = { 24, 8, 0 }, .bpp = { 0, 0, 0 },
 		.hsub = 0, .vsub = 0, .align_w = 1, .align_h = 1, ALIGN_W_CPU_DEFAULT,
 		.tile_size = 1, .has_alpha = false, .is_rgb = false, .is_yuv = false,
-		.afbc = false, .linear = true, .yuv_transform = false, .flex = false, .block_linear = false, .afrc = false,
+		.afbc = true, .linear = false, .yuv_transform = false, .flex = false, .block_linear = false, .afrc = false,
+		.permitted_usage = add_universal_usages(STANDARD_USAGE),
+	},
+	{
+		.id = MALI_GRALLOC_FORMAT_INTERNAL_DEPTH_32F,
+		.npln = 1, .ncmp = { 1, 0, 0 }, .bps = 32, .bpp_afbc = { 32, 0, 0 }, .bpp = { 32, 0, 0 },
+		.hsub = 0, .vsub = 0, .align_w = 1, .align_h = 1, ALIGN_W_CPU_DEFAULT,
+		.tile_size = 1, .has_alpha = false, .is_rgb = false, .is_yuv = false,
+		.afbc = true, .linear = true, .yuv_transform = false, .flex = false, .block_linear = false, .afrc = false,
 		.permitted_usage = add_universal_usages(STANDARD_USAGE),
 	},
 	{
@@ -486,7 +487,7 @@ const format_ip_support_t formats_ip_support[] = {
 		.cpu_wr = F_LIN,
 		.gpu_rd = F_LIN | F_AFBC | F_AFRC,
 		.gpu_wr = F_LIN | F_AFBC | F_AFRC,
-		.dpu_rd = F_AFRC,
+		.dpu_rd = F_NONE,
 		.dpu_wr = F_NONE,
 		.dpu_aeu_wr = F_NONE,
 		.vpu_rd = F_NONE,
@@ -537,9 +538,9 @@ const format_ip_support_t formats_ip_support[] = {
 		.id = MALI_GRALLOC_FORMAT_INTERNAL_RG16,
 		.cpu_rd = F_LIN,
 		.cpu_wr = F_LIN,
-		.gpu_rd = F_LIN | F_AFBC | F_AFRC,
-		.gpu_wr = F_LIN | F_AFBC | F_AFRC,
-		.dpu_rd = F_LIN | F_AFBC | F_AFRC,
+		.gpu_rd = F_LIN | F_AFBC,
+		.gpu_wr = F_LIN | F_AFBC,
+		.dpu_rd = F_LIN | F_AFBC,
 		.dpu_wr = F_NONE,
 		.dpu_aeu_wr = F_NONE,
 		.vpu_rd = F_NONE,
@@ -547,29 +548,16 @@ const format_ip_support_t formats_ip_support[] = {
 		.cam_wr =  F_LIN | F_AFBC,
 	},
 	{
-		.id = MALI_GRALLOC_FORMAT_INTERNAL_R16,
-		.cpu_rd = F_LIN,
-		.cpu_wr = F_LIN,
-		.gpu_rd = F_LIN | F_AFBC | F_AFRC,
-		.gpu_wr = F_LIN | F_AFBC | F_AFRC,
-		.dpu_rd = F_LIN | F_AFBC | F_AFRC,
-		.dpu_wr = F_NONE,
-		.dpu_aeu_wr = F_NONE,
-		.vpu_rd = F_NONE,
-		.vpu_wr = F_NONE,
-		.cam_wr = F_LIN | F_AFBC,
-	},
-	{
 		.id = MALI_GRALLOC_FORMAT_INTERNAL_NV12,
 		.cpu_rd = F_LIN,
 		.cpu_wr = F_LIN,
 		.gpu_rd = F_LIN | F_AFBC | F_BL_YUV | F_AFRC,
-		.gpu_wr = F_LIN | F_AFRC | F_BL_YUV,
-		.dpu_rd = F_LIN | F_AFRC,
+		.gpu_wr = F_LIN          | F_BL_YUV | F_AFRC,
+		.dpu_rd = F_LIN                     | F_AFRC,
 		.dpu_wr = F_LIN,
 		.dpu_aeu_wr = F_NONE,
 		.vpu_rd = F_LIN,
-		.vpu_wr = F_LIN | F_BL_YUV,
+		.vpu_wr = F_LIN | F_AFBC | F_BL_YUV,
 		.cam_wr = F_NONE,
 	},
 	{
@@ -630,12 +618,12 @@ const format_ip_support_t formats_ip_support[] = {
 		.cpu_rd = F_LIN,
 		.cpu_wr = F_LIN,
 		.gpu_rd = F_LIN | F_AFBC | F_BL_YUV | F_AFRC,
-		.gpu_wr = F_LIN | F_AFRC | F_BL_YUV,
-		.dpu_rd = F_NONE | F_AFRC,
+		.gpu_wr = F_LIN          | F_BL_YUV | F_AFRC ,
+		.dpu_rd = F_NONE                    | F_AFRC,
 		.dpu_wr = F_NONE,
 		.dpu_aeu_wr = F_NONE,
 		.vpu_rd = F_NONE,
-		.vpu_wr = F_BL_YUV,
+		.vpu_wr =         F_AFBC | F_BL_YUV,
 		.cam_wr = F_NONE,
 	},
 	/* 444 (8-bit) */
@@ -780,7 +768,7 @@ const format_ip_support_t formats_ip_support[] = {
 		.cpu_wr = F_LIN,
 		.gpu_rd = F_LIN | F_AFBC,
 		.gpu_wr = F_LIN | F_AFBC,
-		.dpu_rd = F_NONE,
+		.dpu_rd = F_LIN | F_AFBC,
 		.dpu_wr = F_NONE,
 		.dpu_aeu_wr = F_NONE,
 		.vpu_rd = F_NONE,
@@ -867,16 +855,29 @@ const format_ip_support_t formats_ip_support[] = {
 		.cam_wr = F_NONE,
 	},
 	{
-		.id = MALI_GRALLOC_FORMAT_INTERNAL_DEPTH_32F,
-		.cpu_rd = F_LIN,
-		.cpu_wr = F_LIN,
-		.gpu_rd = F_NONE,
-		.gpu_wr = F_NONE,
+		.id = MALI_GRALLOC_FORMAT_INTERNAL_DEPTH_24_STENCIL_8_AFBC,
+		.cpu_rd = F_NONE,
+		.cpu_wr = F_NONE,
+		.gpu_rd = F_AFBC,
+		.gpu_wr = F_AFBC,
 		.dpu_rd = F_NONE,
 		.dpu_wr = F_NONE,
 		.dpu_aeu_wr = F_NONE,
 		.vpu_rd = F_NONE,
 		.vpu_wr = F_NONE,
+		.cam_wr = F_NONE,
+	},
+	{
+		.id = MALI_GRALLOC_FORMAT_INTERNAL_DEPTH_32F,
+		.cpu_rd = F_LIN,
+		.cpu_wr = F_LIN,
+		.gpu_rd = F_LIN | F_AFBC,
+		.gpu_wr = F_LIN | F_AFBC,
+		.dpu_rd = F_NONE,
+		.dpu_wr = F_NONE,
+		.dpu_aeu_wr = F_NONE,
+		.vpu_rd = F_AFBC,
+		.vpu_wr = F_AFBC,
 		.cam_wr = F_NONE,
 	},
 	{
@@ -983,21 +984,12 @@ static const hal_int_fmt hal_to_internal_format[] =
 	{ HAL_PIXEL_FORMAT_Y16,                    MALI_GRALLOC_FORMAT_INTERNAL_Y16 },
 	{ HAL_PIXEL_FORMAT_YV12,                   MALI_GRALLOC_FORMAT_INTERNAL_YV12 },
 	{ GRALLOC_PIXEL_FORMAT_R8,                 MALI_GRALLOC_FORMAT_INTERNAL_R8 },
-#if PLATFORM_SDK_VERSION > 33
-	{ GRALLOC_PIXEL_FORMAT_R16_UINT,           MALI_GRALLOC_FORMAT_INTERNAL_R16 },
+	{ GRALLOC_PIXEL_FORMAT_R16_UINT,           MALI_GRALLOC_FORMAT_INTERNAL_RAW16 },
 	{ GRALLOC_PIXEL_FORMAT_R16G16_UINT,        MALI_GRALLOC_FORMAT_INTERNAL_RG16 },
+#if PLATFORM_SDK_VERSION > 33
 	{ GRALLOC_PIXEL_FORMAT_RGBA_10101010,      MALI_GRALLOC_FORMAT_INTERNAL_RGBA_10101010 },
 #endif
 };
-
-#if PLATFORM_SDK_VERSION >= 33
-#include <aidl/android/hardware/graphics/common/PixelFormat.h>
-using aidl::android::hardware::graphics::common::PixelFormat;
-static_assert(static_cast<uint32_t>(PixelFormat::R_8) == GRALLOC_PIXEL_FORMAT_R8);
-#if PLATFORM_SDK_VERSION > 33
-static_assert(static_cast<uint32_t>(PixelFormat::RGBA_10101010) == GRALLOC_PIXEL_FORMAT_RGBA_10101010);
-#endif
-#endif
 
 const std::vector<format_info_t> &get_all_base_formats()
 {
@@ -1073,8 +1065,7 @@ uint32_t get_internal_format(const uint32_t base_format)
 }
 
 /* Get the dataspace to use based on private usage and format. */
-void get_format_dataspace(const format_info_t *format_info, uint64_t usage, int width, int height,
-						  android_dataspace_t *dataspace)
+void get_format_dataspace(const format_info_t *format_info, uint64_t usage, android_dataspace_t *dataspace)
 {
 	*dataspace = HAL_DATASPACE_UNKNOWN;
 
@@ -1082,36 +1073,11 @@ void get_format_dataspace(const format_info_t *format_info, uint64_t usage, int 
 	{
 		return;
 	}
-	MALI_GRALLOC_LOGV("%s w*h [%d*%d] usage=0x%" PRIx64,
-		__FUNCTION__,  width, height, usage);
-
-	uint64_t color_space = HAL_DATASPACE_STANDARD_UNSPECIFIED;
-	uint64_t range = HAL_DATASPACE_RANGE_UNSPECIFIED;
-
-	/* This resolution is the cut-off point at which BT709 is used (as default)
-	 * instead of BT601 for YUV formats < 10 bits.
-	 */
-	constexpr int yuv_bt601_max_width = 1280;
-	constexpr int yuv_bt601_max_height = 720;
 
 	if (format_info->is_yuv)
 	{
-		/* Default YUV dataspace. */
-		color_space = HAL_DATASPACE_STANDARD_BT709;
-		range = HAL_DATASPACE_RANGE_LIMITED;
-
-		/* 10-bit YUV is assumed to be wide BT2020.
-		 */
-		if (format_info->bps >= 10)
-		{
-			color_space = HAL_DATASPACE_STANDARD_BT2020;
-			range = HAL_DATASPACE_RANGE_FULL;
-		}
-		else if (width < yuv_bt601_max_width || height < yuv_bt601_max_height)
-		{
-			color_space = HAL_DATASPACE_STANDARD_BT601_625;
-			range = HAL_DATASPACE_RANGE_LIMITED;
-		}
+		uint64_t color_space = HAL_DATASPACE_STANDARD_UNSPECIFIED;
+		uint64_t range = HAL_DATASPACE_RANGE_UNSPECIFIED;
 
 		/* Override YUV dataspace based on private usage. */
 		switch (usage & MALI_GRALLOC_USAGE_YUV_COLOR_SPACE_MASK)
@@ -1144,6 +1110,21 @@ void get_format_dataspace(const format_info_t *format_info, uint64_t usage, int 
 		/* Default RGB dataspace. Expected by Mapper VTS. */
 		*dataspace = static_cast<android_dataspace_t>(HAL_DATASPACE_UNKNOWN);
 	}
-	MALI_GRALLOC_LOGV("color_space:%" PRIx64 " range:%" PRIx64,
-			color_space, range);
+}
+
+bool is_depth_stencil_format(const format_info_t &info)
+{
+	switch (info.id)
+	{
+	case MALI_GRALLOC_FORMAT_INTERNAL_DEPTH_16:
+	case MALI_GRALLOC_FORMAT_INTERNAL_DEPTH_24:
+	case MALI_GRALLOC_FORMAT_INTERNAL_DEPTH_32F:
+	case MALI_GRALLOC_FORMAT_INTERNAL_DEPTH_32F_STENCIL_8:
+	case MALI_GRALLOC_FORMAT_INTERNAL_DEPTH_24_STENCIL_8_AFBC:
+	case MALI_GRALLOC_FORMAT_INTERNAL_DEPTH_24_STENCIL_8:
+	case MALI_GRALLOC_FORMAT_INTERNAL_STENCIL_8:
+		return true;
+	default:
+		return false;
+	}
 }

@@ -181,8 +181,8 @@ static_assert(sizeof(shared_metadata) == 6480, "bad size");
 void shared_metadata_init(void *memory, std::string_view name, Dataspace dataspace, const ExtendableType &chroma_siting)
 {
 	auto *metadata = new (memory) shared_metadata(name);
-	metadata->dataspace = aligned_optional{dataspace};
-	metadata->chroma_siting = aligned_optional{chroma_siting.value};
+	metadata->dataspace = aligned_optional{ dataspace };
+	metadata->chroma_siting = aligned_optional{ chroma_siting.value };
 }
 
 size_t shared_metadata_size()
@@ -334,12 +334,8 @@ android::status_t set_smpte2086(const imported_handle *hnd, const std::optional<
 	auto *metadata = reinterpret_cast<shared_metadata *>(hnd->attr_base);
 	if (!smpte2086.has_value())
 	{
-		if (PLATFORM_SDK_VERSION >= 33)
-		{
-			metadata->smpte2086.reset();
-			return android::OK;
-		}
-		return android::BAD_VALUE;
+		metadata->smpte2086.reset();
+		return android::OK;
 	}
 	metadata->smpte2086 = aligned_optional(smpte2086);
 	return android::OK;
@@ -356,12 +352,8 @@ android::status_t set_cta861_3(const imported_handle *hnd, const std::optional<C
 	auto *metadata = reinterpret_cast<shared_metadata *>(hnd->attr_base);
 	if (!cta861_3.has_value())
 	{
-		if (PLATFORM_SDK_VERSION >= 33)
-		{
-			metadata->cta861_3.reset();
-			return android::OK;
-		}
-		return android::BAD_VALUE;
+		metadata->cta861_3.reset();
+		return android::OK;
 	}
 	metadata->cta861_3 = aligned_optional(cta861_3);
 	return android::OK;
@@ -385,14 +377,8 @@ android::status_t set_smpte2094_40(const imported_handle *hnd, const std::option
 	auto *metadata = reinterpret_cast<shared_metadata *>(hnd->attr_base);
 	if (!smpte2094_40.has_value())
 	{
-		if (PLATFORM_SDK_VERSION >= 33)
-		{
-			metadata->smpte2094_40.size = 0;
-			return android::OK;
-		}
-		MALI_GRALLOC_LOGE("Empty SMPTE 2094-40 data has_value:%d size:%d",
-			smpte2094_40.has_value(), smpte2094_40->size() == 0);
-		return android::BAD_VALUE;
+		metadata->smpte2094_40.size = 0;
+		return android::OK;
 	}
 
 	const size_t size = smpte2094_40->size();

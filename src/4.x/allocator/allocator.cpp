@@ -52,6 +52,18 @@ Return<void> GrallocAllocator::allocate(const BufferDescriptor &descriptor, uint
 		return Void();
 	}
 	buffer_descriptor.flags = 0;
+#ifdef GRALLOC_HWC_FB_DISABLE_AFBC
+	buffer_descriptor.flags |= (GRALLOC_HWC_FB_DISABLE_AFBC) ? HWC_FB_DISABLE_AFBC : 0;
+#endif
+#ifdef GRALLOC_HWC_FORCE_BGRA_8888
+	buffer_descriptor.flags |= (GRALLOC_HWC_FORCE_BGRA_8888) ? HWC_FORCE_BGRA_8888 : 0;
+#endif
+#if PLATFORM_SDK_VERSION > 33
+	buffer_descriptor.flags |= SUPPORTS_R16_RG16;
+#else
+	buffer_descriptor.flags |= HW_IMP_CAM_USAGE;
+#endif
+
 	CHECK_EQ(buffer_descriptor.flags, mapper::common::DESCRIPTOR_ALLOCATOR_FLAGS);
 
 	auto result = common::allocate(&buffer_descriptor, count);

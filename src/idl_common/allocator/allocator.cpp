@@ -142,12 +142,12 @@ android::base::expected<std::vector<unique_private_handle>, android::status_t> a
 			const uint64_t usage = buffer_descriptor->consumer_usage | buffer_descriptor->producer_usage;
 			android_dataspace_t dataspace;
 			const auto *format_info = internal_format.get_base_info();
-			get_format_dataspace(format_info, usage, hnd->width, hnd->height, &dataspace);
+			get_format_dataspace(format_info, usage, &dataspace);
 
 			ExtendableType chroma_siting;
 			get_format_chroma_siting(internal_format, &chroma_siting, usage);
 			MALI_GRALLOC_LOGV("%s set_dataspace %d", __FUNCTION__, dataspace);
-			std::string_view name{reinterpret_cast<char*>(buffer_descriptor->name.data())};
+			std::string_view name{ reinterpret_cast<char *>(buffer_descriptor->name.data()) };
 			mapper::common::shared_metadata_init(mapping, name, static_cast<mapper::common::Dataspace>(dataspace),
 			                                     chroma_siting);
 		}

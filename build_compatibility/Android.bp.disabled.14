@@ -23,14 +23,21 @@ cc_defaults {
 }
 
 cc_defaults {
+    name: "arm_gralloc_platform_flags",
+    cflags: [
+        "-DPLATFORM_API_LEVEL=34"
+    ],
+}
+
+cc_defaults {
     name: "arm_gralloc_uses_aidl_defaults",
     defaults: [
         "android_hardware_graphics_common_defaults",
     ],
     shared_libs: [
-        "arm.graphics-V4-ndk",
+        "arm.graphics-V@ARM_GRAPHICS_PACKAGE_VERSION@-ndk",
     ],
-    export_shared_lib_headers: ["arm.graphics-V4-ndk"],
+    export_shared_lib_headers: ["arm.graphics-V@ARM_GRAPHICS_PACKAGE_VERSION@-ndk"],
 }
 
 cc_defaults {

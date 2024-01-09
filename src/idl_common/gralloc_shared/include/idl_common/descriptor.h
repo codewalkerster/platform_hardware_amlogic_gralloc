@@ -19,13 +19,16 @@
 
 #include "core/buffer_descriptor.h"
 #include "4.x/mapper/mapper_hidl_header.h"
+#include "usages.h"
+
+#include <android/hardware/graphics/common/1.2/types.h>
+#include <aidl/android/hardware/graphics/common/BufferUsage.h>
+#include <aidl/android/hardware/graphics/common/PixelFormat.h>
+
 #include <algorithm>
 #include <assert.h>
 #include <inttypes.h>
 #include <string.h>
-#if GRALLOC_ALLOCATOR_AIDL_VERSION > 0
-#include <aidl/android/hardware/graphics/common/BufferUsage.h>
-#endif
 
 namespace arm
 {
@@ -33,6 +36,32 @@ namespace mapper
 {
 namespace common
 {
+
+namespace hidl_common = android::hardware::graphics::common::V1_1;
+static_assert(GRALLOC_USAGE_SW_WRITE_RARELY == static_cast<uint64_t>(hidl_common::BufferUsage::CPU_WRITE_RARELY));
+static_assert(GRALLOC_USAGE_SW_READ_MASK == static_cast<uint64_t>(hidl_common::BufferUsage::CPU_READ_MASK));
+static_assert(GRALLOC_USAGE_PROTECTED == static_cast<uint64_t>(hidl_common::BufferUsage::PROTECTED));
+static_assert(GRALLOC_USAGE_CURSOR == static_cast<uint64_t>(hidl_common::BufferUsage::COMPOSER_CURSOR));
+static_assert(GRALLOC_USAGE_HW_RENDER == static_cast<uint64_t>(hidl_common::BufferUsage::GPU_RENDER_TARGET));
+static_assert(GRALLOC_USAGE_HW_CAMERA_WRITE == static_cast<uint64_t>(hidl_common::BufferUsage::CAMERA_OUTPUT));
+static_assert(GRALLOC_USAGE_HW_CAMERA_READ == static_cast<uint64_t>(hidl_common::BufferUsage::CAMERA_INPUT));
+static_assert(GRALLOC_USAGE_HW_TEXTURE == static_cast<uint64_t>(hidl_common::BufferUsage::GPU_TEXTURE));
+static_assert(GRALLOC_USAGE_HW_VIDEO_ENCODER == static_cast<uint64_t>(hidl_common::BufferUsage::VIDEO_ENCODER));
+static_assert(GRALLOC_USAGE_HW_COMPOSER == static_cast<uint64_t>(hidl_common::BufferUsage::COMPOSER_OVERLAY));
+static_assert(GRALLOC_USAGE_SENSOR_DIRECT_DATA == static_cast<uint64_t>(hidl_common::BufferUsage::SENSOR_DIRECT_DATA));
+static_assert(GRALLOC_USAGE_GPU_DATA_BUFFER == static_cast<uint64_t>(hidl_common::BufferUsage::GPU_DATA_BUFFER));
+static_assert(GRALLOC_USAGE_DECODER == static_cast<uint64_t>(hidl_common::BufferUsage::VIDEO_DECODER));
+
+#if PLATFORM_SDK_VERSION >= 33
+namespace aidl_common = aidl::android::hardware::graphics::common;
+static_assert(GRALLOC_USAGE_FRONTBUFFER == static_cast<uint64_t>(aidl_common::BufferUsage::FRONT_BUFFER));
+static_assert(static_cast<uint32_t>(aidl_common::PixelFormat::R_8) == GRALLOC_PIXEL_FORMAT_R8);
+#if PLATFORM_SDK_VERSION > 33
+static_assert(static_cast<uint32_t>(aidl_common::PixelFormat::RGBA_10101010) == GRALLOC_PIXEL_FORMAT_RGBA_10101010);
+static_assert(static_cast<uint32_t>(aidl_common::PixelFormat::R_16_UINT) == GRALLOC_PIXEL_FORMAT_R16_UINT);
+static_assert(static_cast<uint32_t>(aidl_common::PixelFormat::RG_1616_UINT) == GRALLOC_PIXEL_FORMAT_R16G16_UINT);
+#endif
+#endif
 
 using android::hardware::hidl_vec;
 
@@ -46,13 +75,25 @@ const uint64_t validUsageBits =
     BufferUsage::CAMERA_OUTPUT | BufferUsage::PROTECTED | BufferUsage::COMPOSER_CURSOR | BufferUsage::VIDEO_ENCODER |
     BufferUsage::RENDERSCRIPT | BufferUsage::VIDEO_DECODER | BufferUsage::SENSOR_DIRECT_DATA |
 #if GRALLOC_ALLOCATOR_AIDL_VERSION > 0
-    static_cast<uint64_t>(aidl::android::hardware::graphics::common::BufferUsage::FRONT_BUFFER) |
+    static_cast<uint64_t>(aidl_common::BufferUsage::FRONT_BUFFER) |
 #endif
     BufferUsage::GPU_DATA_BUFFER | BufferUsage::VENDOR_MASK | BufferUsage::VENDOR_MASK_HI;
 
 const uint32_t DESCRIPTOR_ALLOCATOR_FLAGS =
     ((GRALLOC_ALLOCATOR_AIDL_VERSION > 0) ? GPU_DATA_BUFFER_WITH_ANY_FORMAT | USE_AIDL_FRONTBUFFER_USAGE | SUPPORTS_R8 :
-                                            0);
+                                            0)
+#ifdef GRALLOC_HWC_FB_DISABLE_AFBC
+    | ((GRALLOC_HWC_FB_DISABLE_AFBC) ? HWC_FB_DISABLE_AFBC : 0)
+#endif
+#ifdef GRALLOC_HWC_FORCE_BGRA_8888
+    | ((GRALLOC_HWC_FORCE_BGRA_8888) ? HWC_FORCE_BGRA_8888 : 0)
+#endif
+#if PLATFORM_SDK_VERSION > 33
+    | SUPPORTS_R16_RG16
+#else
+    | HW_IMP_CAM_USAGE
+#endif
+    ;
 
 template <typename BufferDescriptorInfoT>
 static bool validateDescriptorInfo(const BufferDescriptorInfoT &descriptorInfo)

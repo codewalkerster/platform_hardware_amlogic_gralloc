@@ -36,6 +36,18 @@ static ndk::ScopedAStatus allocate_common(buffer_descriptor_t *buffer_descriptor
                                           AllocationResult *out_result)
 {
 	buffer_descriptor->flags |= GPU_DATA_BUFFER_WITH_ANY_FORMAT | SUPPORTS_R8 | USE_AIDL_FRONTBUFFER_USAGE;
+#ifdef GRALLOC_HWC_FB_DISABLE_AFBC
+	buffer_descriptor->flags |= (GRALLOC_HWC_FB_DISABLE_AFBC) ? HWC_FB_DISABLE_AFBC : 0;
+#endif
+#ifdef GRALLOC_HWC_FORCE_BGRA_8888
+	buffer_descriptor->flags |= (GRALLOC_HWC_FORCE_BGRA_8888) ? HWC_FORCE_BGRA_8888 : 0;
+#endif
+#if PLATFORM_SDK_VERSION > 33
+	buffer_descriptor->flags |= SUPPORTS_R16_RG16;
+#else
+	buffer_descriptor->flags |= HW_IMP_CAM_USAGE;
+#endif
+
 	CHECK_EQ(buffer_descriptor->flags, ::arm::mapper::common::DESCRIPTOR_ALLOCATOR_FLAGS);
 
 	auto result = ::arm::allocator::common::allocate(buffer_descriptor, in_count);
@@ -135,6 +147,17 @@ ndk::ScopedAStatus allocator::isSupported(const BufferDescriptorInfo &in_descrip
 	grallocDescriptor.consumer_usage = grallocDescriptor.producer_usage;
 
 	grallocDescriptor.flags |= GPU_DATA_BUFFER_WITH_ANY_FORMAT | SUPPORTS_R8 | USE_AIDL_FRONTBUFFER_USAGE;
+#ifdef GRALLOC_HWC_FB_DISABLE_AFBC
+	grallocDescriptor.flags |= (GRALLOC_HWC_FB_DISABLE_AFBC) ? HWC_FB_DISABLE_AFBC : 0;
+#endif
+#ifdef GRALLOC_HWC_FORCE_BGRA_8888
+	grallocDescriptor.flags |= (GRALLOC_HWC_FORCE_BGRA_8888) ? HWC_FORCE_BGRA_8888 : 0;
+#endif
+#if PLATFORM_SDK_VERSION > 33
+	grallocDescriptor.flags |= SUPPORTS_R16_RG16;
+#else
+	grallocDescriptor.flags |= HW_IMP_CAM_USAGE;
+#endif
 
 	*out_result = true;
 

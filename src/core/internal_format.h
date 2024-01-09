@@ -384,7 +384,8 @@ inline constexpr internal_format_t internal_format_t::invalid = internal_format_
 inline std::ostream& operator<<(std::ostream& os, internal_format_t format)
 {
 	auto flags = os.flags();
-	os << std::showbase << std::hex << "FMT:" << format.m_format << ",MOD:" << format.m_modifiers;
+	os << std::showbase << std::hex << "FMT:" << format.m_format << ",MOD:" << format.m_modifiers
+	   << ",DT:" << (uint32_t)format.format_data_type;
 	os.flags(flags);
 	return os;
 }

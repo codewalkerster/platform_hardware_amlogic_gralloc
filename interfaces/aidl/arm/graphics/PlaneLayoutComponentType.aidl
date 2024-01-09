@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Arm Limited.
+ * Copyright (C) 2023 Arm Limited.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,33 +14,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package {
-    default_applicable_licenses: ["hardware_amlogic_license"],
-}
 
-aidl_interface {
-    name: "arm.graphics",
-    owner: "arm",
-    host_supported: true,
-    vendor_available: true,
-    system_ext_specific: true,
-    srcs: [
-        "arm/graphics/*.aidl",
-    ],
-    stability: "vintf",
-    backend: {
-        java: {
-            enabled: false,
-        },
-        cpp: {
-            enabled: false,
-        },
-    },
-    versions: [
-        "1",
-        "2",
-        "3",
-        "4",
-        "5",
-    ],
+package arm.graphics;
+
+/**
+ * Used by IMapper to describe additional plane layout component types.
+ *
+ * This is an enum for the plane layout component types.
+ */
+@VintfStability
+@Backing(type="long")
+enum PlaneLayoutComponentType {
+    DEPTH = 0,
+    STENCIL = 1,
 }

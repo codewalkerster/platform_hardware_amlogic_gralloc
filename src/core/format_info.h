@@ -119,8 +119,12 @@ const std::vector<format_info_t> &get_all_base_formats();
 const format_info_t *get_format_info(uint32_t base_format);
 extern const format_ip_support_t *get_format_ip_support(uint32_t base_format);
 extern uint32_t get_internal_format(uint32_t base_format);
-void get_format_dataspace(const format_info_t *info,
-                          uint64_t usage,
-                          int width,
-                          int height,
-                          android_dataspace_t *dataspace);
+void get_format_dataspace(const format_info_t *info, uint64_t usage, android_dataspace_t *dataspace);
+
+/**
+ * @brief Checks whether format represents depth or depth/stencil
+ *
+ * @param info Format to check
+ * @return true If format represents depth or depth/stencil, false otherwise
+ */
+bool is_depth_stencil_format(const format_info_t &info);

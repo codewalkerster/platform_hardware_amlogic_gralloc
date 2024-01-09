@@ -30,16 +30,14 @@ cc_defaults {
 cc_defaults {
     name: "arm_gralloc_version_defaults",
     defaults: [
+        "arm_gralloc_platform_flags",
         "arm_gralloc_mapper_version_defaults",
         "arm_gralloc_allocator_version_defaults",
-    ],
-    shared_libs: [
-        "android.hardware.graphics.common@1.2",
     ],
 }
 
 cc_library_headers {
-    name: "libgralloc_headers",
+    name: "arm_gralloc_headers",
     vendor_available: true,
     host_supported: true,
     export_include_dirs: [
@@ -56,11 +54,32 @@ cc_library_headers {
     ],
 }
 
+cc_defaults {
+    name: "arm_gralloc_headers_defaults",
+    header_libs: [
+        "arm_gralloc_headers",
+    ],
+    shared_libs: [
+        "android.hardware.graphics.common@1.2",
+        "liblog",
+    ],
+}
+
 cc_library_headers {
-    name: "libgralloc_headers_internal",
+    name: "arm_gralloc_internal_headers",
     vendor: true,
     host_supported: true,
     export_include_dirs: [
         ".",
     ],
+}
+
+cc_defaults {
+    name: "arm_gralloc_internal_headers_defaults",
+    header_libs: [
+        "arm_gralloc_internal_headers",
+    ],
+    shared_libs: [
+        "liblog",
+    ]
 }

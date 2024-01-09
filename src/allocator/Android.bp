@@ -114,6 +114,8 @@ cc_library_static {
         "arm_gralloc_allocator_defaults",
         "arm_gralloc_version_defaults",
         "libgralloc_allocator_dependencies",
+        "arm_gralloc_internal_headers_defaults",
+        "arm_gralloc_config_defaults",
     ],
     cflags: [
         "-DGRALLOC_AML_EXTEND=1",

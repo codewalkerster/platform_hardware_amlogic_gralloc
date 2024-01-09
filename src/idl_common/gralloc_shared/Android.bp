@@ -23,6 +23,7 @@ cc_defaults {
     defaults: [
         "arm_gralloc_version_defaults",
         "arm_gralloc_uses_aidl_defaults",
+        "arm_gralloc_config_defaults",
     ],
     shared_libs: [
         "liblog",

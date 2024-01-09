@@ -28,7 +28,12 @@ int main()
 	ABinderProcess_setThreadPoolMaxThreadCount(0);
 	auto instance = ndk::SharedRefBase::make<allocator>();
 	const std::string name = std::string() + allocator::descriptor + "/default";
+#if PLATFORM_API_LEVEL >= 34
+	auto status = AServiceManager_addServiceWithFlags(instance->asBinder().get(), name.c_str(),
+	                                                  AServiceManager_AddServiceFlag::ADD_SERVICE_ALLOW_ISOLATED);
+#else
 	auto status = AServiceManager_addService(instance->asBinder().get(), name.c_str());
+#endif
 	CHECK_EQ(status, STATUS_OK);
 
 	ABinderProcess_joinThreadPool();

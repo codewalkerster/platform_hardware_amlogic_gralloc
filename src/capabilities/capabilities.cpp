@@ -27,19 +27,9 @@
 
 static bool caps_supports_feature_cpu(feature_t feature)
 {
-	if (feature == feature_t::FORMAT_R10G10B10A2)
-	{
-		return true;
-	}
-	if (feature == feature_t::FORMAT_R10G10B10A10)
-	{
-		return true;
-	}
-	if (feature == feature_t::FORMAT_R16G16B16A16_FLOAT)
-	{
-		return true;
-	}
-	return false;
+	return (feature == feature_t::FORMAT_R10G10B10A2) || (feature == feature_t::FORMAT_R10G10B10A10) ||
+	       (feature == feature_t::FORMAT_R16G16B16A16_FLOAT) || (feature == feature_t::FORMAT_RGB16) ||
+	       (feature == feature_t::FORMAT_DEPTH_STENCIL);
 }
 
 bool ip_support_feature(mali_gralloc_ip producers, mali_gralloc_ip consumers, feature_t feature)
@@ -66,8 +56,9 @@ bool ip_support_feature(mali_gralloc_ip producers, mali_gralloc_ip consumers, fe
 		/* We handle a missing IP by posing no restrictions for that IP on format allocation. */
 		if (!handle.caps_have_value())
 		{
-			LOG_ALWAYS_FATAL_IF(handle.get_ip() == MALI_GRALLOC_IP_GPU,
-				"Unable to retrieve GPU capabilities. XML file either not found or contains syntax errors. Aborting.");
+			LOG_ALWAYS_FATAL_IF(
+			    handle.get_ip() == MALI_GRALLOC_IP_GPU,
+			    "Unable to retrieve GPU capabilities. XML file either not found or contains syntax errors. Aborting.");
 			continue;
 		}
 
@@ -95,8 +86,7 @@ bool ip_support_feature(mali_gralloc_ip producers, mali_gralloc_ip consumers, fe
 }
 
 /* This is used by the unit tests to get the capabilities for each IP. */
-extern "C" bool mali_gralloc_ip_supports_feature(
-	mali_gralloc_ip producers, mali_gralloc_ip consumers, const char *feature_name)
+extern "C" bool mali_gralloc_ip_supports_feature(mali_gralloc_ip producers, mali_gralloc_ip consumers, const char *feature_name)
 {
 	feature_t feature = name_to_feature(std::string(feature_name));
 	if (feature == feature_t::UNKNOWN)

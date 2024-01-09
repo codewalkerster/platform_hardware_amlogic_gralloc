@@ -16,6 +16,9 @@
 
 #include "internal_format.h"
 #include "format_info.h"
+#include "usages.h"
+#include "format_selection.h"
+
 GRALLOC_LOG_LEVEL gralloc_log_level = GRALLOC_LOG_LEVEL_ERR;
 
 internal_format_t internal_format_t::from_private(mali_gralloc_android_format private_format)
@@ -23,8 +26,30 @@ internal_format_t internal_format_t::from_private(mali_gralloc_android_format pr
 	/* Clean the sentinel bit as it has no purpose after this point. */
 	auto fmt = (static_cast<mali_gralloc_internal_format>(private_format) &
 	            ~static_cast<mali_gralloc_internal_format>(MALI_GRALLOC_INTFMT_SENTINEL));
-	/* TODO: GPUCORE-37452 - AFBC Bayer format support - add mechanism for the setter */
-	return internal_format_t(fmt, mali_gralloc_format_data_type::UNORM);
+
+	mali_gralloc_format_data_type data_type;
+
+	switch (mali_gralloc_format_get_base(private_format))
+	{
+	case MALI_GRALLOC_FORMAT_INTERNAL_STENCIL_8:
+	case MALI_GRALLOC_FORMAT_INTERNAL_BLOB:
+	case MALI_GRALLOC_FORMAT_INTERNAL_RG16:
+	case MALI_GRALLOC_FORMAT_INTERNAL_RAW16:
+		/*According to the requirements these formats are considerate as UINT */
+		data_type = mali_gralloc_format_data_type::UINT;
+		break;
+	case MALI_GRALLOC_FORMAT_INTERNAL_RGBA_16161616:
+		/* According to the requirements HAL_PIXEL_FORMAT_XXX_FP which is mapped to the internal format is
+		uncondintionally set to SFLOAT */
+		data_type = mali_gralloc_format_data_type::SFLOAT;
+		break;
+	default:
+		/*According to the requirements the default datatype is UNORM */
+		data_type = mali_gralloc_format_data_type::UNORM;
+		break;
+	}
+
+	return internal_format_t(fmt, data_type);
 }
 
 mali_gralloc_android_format internal_format_t::get_base() const

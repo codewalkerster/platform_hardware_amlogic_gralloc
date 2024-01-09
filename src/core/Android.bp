@@ -34,8 +34,6 @@ cc_defaults {
     name: "arm_gralloc_core_defaults",
     defaults: [
         "arm_gralloc_defaults",
-        "arm_gralloc_version_defaults",
-        "arm_gralloc_uses_aidl_defaults",
     ],
 
     srcs: [
@@ -58,6 +56,12 @@ cc_defaults {
             shared_libs: [
                 "libhardware",
             ],
+        },
+    },
+    // Usage of these build configuration variables should be replaced by descriptor flags
+    product_variables: {
+        platform_sdk_version: {
+            cflags: ["-DPLATFORM_SDK_VERSION=%d"],
         },
     },
     cflags: [

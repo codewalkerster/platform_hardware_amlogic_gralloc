@@ -25,6 +25,7 @@ limitations under the License.
             <xs:enumeration value="FORMAT_R10G10B10A2"/>
             <xs:enumeration value="FORMAT_R10G10B10A10"/>
             <xs:enumeration value="FORMAT_R16G16B16A16_FLOAT"/>
+            <xs:enumeration value="FORMAT_DEPTH_STENCIL"/>
             <xs:enumeration value="YUV_BL_8"/>
             <xs:enumeration value="YUV_BL_10"/>
             <xs:enumeration value="AFBC_16X16"/>
@@ -36,8 +37,8 @@ limitations under the License.
             <xs:enumeration value="AFBC_WRITE_NON_SPARSE"/>
             <xs:enumeration value="AFBC_YUV"/>
             <xs:enumeration value="AFBC_FORMAT_R16G16B16A16_FLOAT"/>
-            <xs:enumeration value="AFBC_FORMAT_RGB16"/>
-            <xs:enumeration value="AFRC_FORMAT_RGB16"/>
+            <xs:enumeration value="AFBC_FORMAT_Y210"/>
+            <xs:enumeration value="FORMAT_RGB16"/>
             <xs:enumeration value="AFRC_ROT_LAYOUT"/>
             <xs:enumeration value="AFRC_SCAN_LAYOUT"/>
             <xs:enumeration value="DISABLED"/>

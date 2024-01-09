@@ -323,9 +323,7 @@ static std::unordered_map<StandardMetadataType, common::metadata_encoder> standa
 	{ StandardMetadataType::SMPTE2086, ENCODE_FNC(std::optional<Smpte2086>, encodeSmpte2086) },
 	{ StandardMetadataType::CTA861_3, ENCODE_FNC(std::optional<Cta861_3>, encodeCta861_3) },
 	{ StandardMetadataType::SMPTE2094_40, ENCODE_FNC(std::optional<std::vector<uint8_t>>, encodeSmpte2094_40) },
-#if PLATFORM_SDK_VERSION >= 33
 	{ StandardMetadataType::SMPTE2094_10, ENCODE_FNC(std::optional<std::vector<uint8_t>>, encodeSmpte2094_10) },
-#endif
 };
 
 static std::unordered_map<ArmMetadataType, common::metadata_encoder> arm_handlers = {
@@ -415,10 +413,8 @@ common::metadata_decoder get_decode_function(const common::metadata_descriptor &
 		{ StandardMetadataType::CTA861_3, DECODE_FUNCTION(decodeCta861_3, std::optional<Cta861_3> *) },
 		{ StandardMetadataType::SMPTE2094_40,
 		  DECODE_FUNCTION(decodeSmpte2094_40, std::optional<std::vector<uint8_t>> *) },
-#if PLATFORM_SDK_VERSION >= 33
 		{ StandardMetadataType::SMPTE2094_10,
 		  DECODE_FUNCTION(decodeSmpte2094_10, std::optional<std::vector<uint8_t>> *) },
-#endif
 		{ StandardMetadataType::CROP, DECODE_FUNCTION(decodeCrop, std::vector<Rect> *) },
 	};
 

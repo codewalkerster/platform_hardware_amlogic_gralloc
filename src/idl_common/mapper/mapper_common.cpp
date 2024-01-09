@@ -78,9 +78,7 @@ static const std::vector<metadata_type> metadata_descriptions = {
 	{ StandardMetadataType::CTA861_3, true, true },
 	{ StandardMetadataType::SMPTE2094_40, true, true },
 	{ StandardMetadataType::CROP, true, true },
-#if PLATFORM_SDK_VERSION >= 33
 	{ StandardMetadataType::SMPTE2094_10, true, true },
-#endif
 #if defined(GRALLOC_STABLEC_MAPPER_ENABLED) && GRALLOC_STABLEC_MAPPER_ENABLED == 1
 	{ StandardMetadataType::STRIDE, true, false },
 #endif
@@ -720,11 +718,32 @@ static std::vector<std::vector<PlaneLayoutComponent>> plane_layout_components_fr
 			.drm_fourcc = DRM_FORMAT_R8,
 			.components = { { {R, 0, 8} } },
 		},
+		/* 16 bit R Channel */
+		{
+			.drm_fourcc = DRM_FORMAT_R16,
+			.components = { { { R, 0, 16 } } },
+		},
+		/* 32 bit RG */
+		{
+			.drm_fourcc = DRM_FORMAT_GR1616,
+			.components = { { { R, 0, 16 }, {G, 16, 16} } },
+		},
 	};
 	/* clang-format on */
 
 	/* Special case for formats that can't be represented by a DRM fourcc */
 	const auto internal_format = hnd->alloc_format;
+	switch (internal_format.get_base())
+	{
+	case MALI_GRALLOC_FORMAT_INTERNAL_DEPTH_16:
+		return { { { PlaneLayoutComponentType_DEPTH, 0, 16 } } };
+	case MALI_GRALLOC_FORMAT_INTERNAL_DEPTH_24_STENCIL_8:
+		return { { { PlaneLayoutComponentType_DEPTH, 0, 24 }, { PlaneLayoutComponentType_STENCIL, 24, 8 } } };
+	case MALI_GRALLOC_FORMAT_INTERNAL_DEPTH_24_STENCIL_8_AFBC:
+		return { { { PlaneLayoutComponentType_DEPTH, 0, 24 } }, { { PlaneLayoutComponentType_STENCIL, 0, 8 } } };
+	case MALI_GRALLOC_FORMAT_INTERNAL_DEPTH_32F:
+		return { { { PlaneLayoutComponentType_DEPTH, 0, 32 } } };
+	}
 	if (!internal_format.has_modifiers())
 	{
 		switch (internal_format.get_base())
