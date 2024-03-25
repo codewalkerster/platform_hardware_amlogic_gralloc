@@ -462,8 +462,10 @@ native_handle_t * am_gralloc_create_sideband_handle(int type, int channel) {
     native_handle_t* handle = native_handle_create(
         AM_SIDEBAND_HANDLE_NUM_FD,
         AM_SIDEBAND_HANDLE_NUM_INT);
-    if (!handle)
+    if (!handle) {
         ALOGE("%s: native_handle_create fail", __FUNCTION__);
+        return nullptr;
+    }
 
     fake_fd = open("/dev/null", O_RDONLY | O_CLOEXEC);
     if (fake_fd < 0)

@@ -627,8 +627,6 @@ static mali_gralloc_format_data_type calc_format_data_type(const format_info_t &
 	case MALI_GRALLOC_FORMAT_INTERNAL_RGBA_16161616:
 		data_type = mali_gralloc_format_data_type::SFLOAT;
 		break;
-		data_type = mali_gralloc_format_data_type::UINT;
-		break;
 	case MALI_GRALLOC_FORMAT_INTERNAL_DEPTH_32F:
 		data_type = mali_gralloc_format_data_type::SFLOAT;
 		break;

@@ -585,9 +585,11 @@ static int am_gralloc_exec_uvm_policy(
 			aligned_bit = 64;
 
 		if (bufDescriptor->decoder_para_type == buffer_descriptor_t::WxH) {
+			auto w_align = (bufDescriptor->decoder_para.w_align == 0) ? 1 : bufDescriptor->decoder_para.w_align;
+			auto h_align = (bufDescriptor->decoder_para.h_align == 0) ? 1 : bufDescriptor->decoder_para.h_align;
 			v4l2_dec_max_buf_size =
-				GRALLOC_ALIGN(bufDescriptor->decoder_para.width, bufDescriptor->decoder_para.w_align) *
-				GRALLOC_ALIGN(bufDescriptor->decoder_para.height, bufDescriptor->decoder_para.h_align) * 3 / 2;
+				GRALLOC_ALIGN(bufDescriptor->decoder_para.width, w_align) *
+				GRALLOC_ALIGN(bufDescriptor->decoder_para.height, h_align) * 3 / 2;
 			if (bufDescriptor->hal_format == HAL_PIXEL_FORMAT_YCBCR_P010)
 				v4l2_dec_max_buf_size *= 2;
 		} else if ((bufDescriptor->decoder_para_type == buffer_descriptor_t::SIZE) ||
