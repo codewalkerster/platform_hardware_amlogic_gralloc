@@ -82,3 +82,9 @@ $(call soong_config_set,arm_gralloc,use_ion_flag,true)
 else
 $(call soong_config_set,arm_gralloc,use_dma_flag,true)
 endif
+
+ifeq ($(GPU_ARCH), valhall)
+    RESULT := $(shell $(GRALLOC_TOP_DIR)/choose_version.sh r47p0)
+else
+    RESULT := $(shell $(GRALLOC_TOP_DIR)/choose_version.sh r47p0)
+endif
