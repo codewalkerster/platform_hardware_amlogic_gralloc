@@ -889,6 +889,16 @@ int mali_gralloc_derive_format_and_size(buffer_descriptor_t *descriptor)
 			descriptor->size *= descriptor->layer_count;
 		}
 	}
+
+	// for AFRC, DRM core using actual size but not byte stride
+	if (descriptor->alloc_format.is_afrc())
+	{
+		descriptor->pitches = alloc_width * format_info->bpp[0] / format_info->bps;
+	}
+	else
+	{
+		descriptor->pitches = 0;
+	}
 	return 0;
 }
 

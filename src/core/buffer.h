@@ -212,6 +212,7 @@ struct private_handle_t : public native_handle
 	uint32_t ion_delay_alloc{0};
 	uint32_t usage{0};
 	bool     need_mmap{true};
+	uint32_t pitches;
 //meson graphics changes end
 
 	/* Size of the attribute shared region in bytes. */

@@ -121,6 +121,18 @@ typedef enum {
     VPU_AFBC_YUV_TRANSFORM              = (1 << 8),
 } AM_VPU_AFBC_MASK;
 
+#ifndef AFRC_FORMAT_MOD_CU_SIZE_16
+#define AFRC_FORMAT_MOD_CU_SIZE_16 (1ULL)
+#endif
+
+#ifndef AFRC_FORMAT_MOD_CU_SIZE_24
+#define AFRC_FORMAT_MOD_CU_SIZE_24 (2ULL)
+#endif
+
+#ifndef AFRC_FORMAT_MOD_CU_SIZE_32
+#define AFRC_FORMAT_MOD_CU_SIZE_32 (3ULL)
+#endif
+
 int am_gralloc_get_vpu_afbc_mask(const native_handle_t * hnd);
 
 /*
@@ -183,5 +195,6 @@ void am_gralloc_set_parameters(uint32_t slot_id, am_gralloc_decode_para para_map
 uint32_t am_gralloc_get_slot_id();
 void am_gralloc_free_slot(uint32_t slot_id);
 uint64_t am_gralloc_compose_slot_id(uint32_t slot_id);
+uint32_t am_gralloc_get_vpu_afrc_mask(const native_handle_t * hnd);
 
 #endif/*AM_GRALLOC_EXT_H*/

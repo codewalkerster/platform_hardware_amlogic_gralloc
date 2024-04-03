@@ -227,7 +227,13 @@ int am_gralloc_get_stride_in_byte(const native_handle_t * hnd) {
 int am_gralloc_get_stride_in_byte(const native_handle_t * hnd) {
     private_handle_t const* buffer = hnd ? private_handle_t::downcast(hnd) : NULL;
     if (buffer)
-        return buffer->plane_info[0].byte_stride;
+    {
+        const auto internal_format = buffer->alloc_format;
+        if (!internal_format.is_afrc())
+            return buffer->plane_info[0].byte_stride;
+        else
+            return buffer->pitches;
+    }
 
     return 0;
 }
@@ -875,3 +881,93 @@ uint64_t am_gralloc_compose_slot_id(uint32_t slot_id)
     return MESON_GRALLOC_COMP_SLOT_ID(usage);
 }
 
+bool is_android_yuv_format(int req_format)
+{
+    bool rval = false;
+
+    switch (req_format)
+    {
+    case HAL_PIXEL_FORMAT_YV12:
+    case HAL_PIXEL_FORMAT_Y8:
+    case HAL_PIXEL_FORMAT_Y16:
+    case HAL_PIXEL_FORMAT_YCbCr_420_888:
+    case HAL_PIXEL_FORMAT_YCbCr_422_888:
+    case HAL_PIXEL_FORMAT_YCbCr_444_888:
+    case HAL_PIXEL_FORMAT_YCrCb_420_SP:
+    case HAL_PIXEL_FORMAT_YCbCr_422_SP:
+    case HAL_PIXEL_FORMAT_YCBCR_422_I:
+    case HAL_PIXEL_FORMAT_RAW16:
+    case HAL_PIXEL_FORMAT_RAW12:
+    case HAL_PIXEL_FORMAT_RAW10:
+    case HAL_PIXEL_FORMAT_RAW_OPAQUE:
+    case HAL_PIXEL_FORMAT_BLOB:
+    case HAL_PIXEL_FORMAT_IMPLEMENTATION_DEFINED:
+        rval = true;
+        break;
+    }
+
+    return rval;
+}
+
+/* copy from the function get_afrc_modifier_tags */
+uint32_t am_gralloc_get_vpu_afrc_mask(const native_handle_t * hnd)
+{
+    private_handle_t const* buffer = hnd ? private_handle_t::downcast(hnd) : NULL;
+    if (!buffer)
+    {
+        return 0;
+    }
+
+    const auto internal_format = buffer->alloc_format;
+    if (!internal_format.is_afrc())
+    {
+        return 0;
+    }
+
+    uint32_t modifier = 0;
+    if (is_android_yuv_format(buffer->format) && buffer->is_multi_plane())
+    {
+        switch (internal_format.get_afrc_luma_coding_size())
+        {
+        case afrc_coding_unit_size_t::bytes_32:
+            modifier |= (AFRC_FORMAT_MOD_CU_SIZE_32);
+            break;
+        case afrc_coding_unit_size_t::bytes_24:
+            modifier |= (AFRC_FORMAT_MOD_CU_SIZE_24);
+            break;
+        case afrc_coding_unit_size_t::bytes_16:
+            modifier |= (AFRC_FORMAT_MOD_CU_SIZE_16);
+            break;
+        }
+
+        switch (internal_format.get_afrc_chroma_coding_size())
+        {
+        case afrc_coding_unit_size_t::bytes_32:
+            modifier |= (AFRC_FORMAT_MOD_CU_SIZE_32 << 4);
+            break;
+        case afrc_coding_unit_size_t::bytes_24:
+            modifier |= (AFRC_FORMAT_MOD_CU_SIZE_24 << 4);
+            break;
+        case afrc_coding_unit_size_t::bytes_16:
+            modifier |= (AFRC_FORMAT_MOD_CU_SIZE_16 << 4);
+            break;
+        }
+    }
+    else
+    {
+        switch (internal_format.get_afrc_rgba_coding_size())
+        {
+        case afrc_coding_unit_size_t::bytes_32:
+            modifier |= (AFRC_FORMAT_MOD_CU_SIZE_32);
+            break;
+        case afrc_coding_unit_size_t::bytes_24:
+            modifier |= (AFRC_FORMAT_MOD_CU_SIZE_24);
+            break;
+        case afrc_coding_unit_size_t::bytes_16:
+            modifier |= (AFRC_FORMAT_MOD_CU_SIZE_16);
+            break;
+        }
+    }
+
+    return modifier;
+}

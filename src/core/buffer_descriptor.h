@@ -78,5 +78,6 @@ struct buffer_descriptor_t
 		BOTH,
 	} decoder_para_type {NONE};
 	struct gralloc_decoder_para decoder_para;
+	uint32_t pitches;
 #endif
 };

@@ -856,6 +856,7 @@ unique_private_handle allocator_allocate(const buffer_descriptor_t *descriptor)
 			(GRALLOC_ALIGN(descriptor->decoder_para.width, descriptor->decoder_para.w_align) ==
 				GRALLOC_ALIGN(descriptor->width, descriptor->decoder_para.w_align));
 	}
+	private_handle->pitches = descriptor->pitches;
 #endif
 
 	return private_handle;
