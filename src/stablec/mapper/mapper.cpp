@@ -492,7 +492,6 @@ AIMapper_Error GrallocMapperV5::dumpAllBuffers(AIMapper_BeginDumpBufferCallback 
 		return mapper_error_to_stablec_error(err);
 	}
 
-	beginDumpBufferCallback(context);
 	for (auto &it : buf_dumps)
 	{
 		for (auto &dump : it.metadata)
@@ -500,8 +499,8 @@ AIMapper_Error GrallocMapperV5::dumpAllBuffers(AIMapper_BeginDumpBufferCallback 
 			auto type = AIMapper_MetadataType{ dump.type.m_name, dump.type.m_value };
 			dumpBufferCallback(context, type, dump.data.data(), dump.data.size());
 		}
+		beginDumpBufferCallback(context);
 	}
-
 	return AIMAPPER_ERROR_NONE;
 }
 
