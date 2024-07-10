@@ -28,6 +28,7 @@ soong_config_module_type {
         "build_kernel_4_9",
         "use_ion_flag",
         "use_dma_flag",
+        "alloc_from_same_heap",
     ],
     properties: [
         "cflags",
@@ -53,6 +54,10 @@ soong_config_bool_variable {
 
 soong_config_bool_variable {
     name: "use_dma_flag",
+}
+
+soong_config_bool_variable {
+    name: "alloc_from_same_heap",
 }
 
 arm_gralloc_allocator_cc_defaults {
@@ -84,7 +89,12 @@ arm_gralloc_allocator_cc_defaults {
         },
         use_dma_flag: {
             srcs: ["dma_buf_heaps/aml_dma_buf_heaps.cpp"],
-        }
+        },
+        alloc_from_same_heap: {
+            cflags: [
+                "-DALLOC_FROM_SAME_HEAP",
+            ],
+        },
     },
     static_libs: [
         "libarect",

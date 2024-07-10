@@ -83,6 +83,10 @@ else
 $(call soong_config_set,arm_gralloc,use_dma_flag,true)
 endif
 
+#gralloc allocate all three buffers from the same heap for a layer, the function only enabled on s5/s6/s7d
+GRALLOC_SAME_HEAP_ONE_LAYER ?= false
+$(call soong_config_set,arm_gralloc,alloc_from_same_heap,$(GRALLOC_SAME_HEAP_ONE_LAYER))
+
 ifeq ($(GPU_ARCH), valhall)
     RESULT := $(shell $(GRALLOC_TOP_DIR)/choose_version.sh r47p0)
 else

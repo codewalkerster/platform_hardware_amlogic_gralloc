@@ -29,6 +29,14 @@
 #include <am_gralloc_internal.h>
 #include "aml_dma_buf_heaps.h"
 
+#ifdef ALLOC_FROM_SAME_HEAP
+#include <fstream>
+#include <iostream>
+#include <string>
+#include <unordered_map>
+#include "utils/Timers.h"
+#endif
+
 #define V4L2_DECODER_BUFFER_MAX_WIDTH       4096
 #define V4L2_DECODER_BUFFER_MAX_HEIGHT      2304
 #define V4L2_DECODER_BUFFER_8k_MAX_WIDTH       8192
@@ -295,9 +303,9 @@ unique_private_handle allocator_allocate(const buffer_descriptor_t *descriptor)
 	    descriptor->consumer_usage, descriptor->producer_usage, std::move(fd), descriptor->hal_format,
 	    descriptor->alloc_format, descriptor->width, descriptor->height, descriptor->layer_count,
 	    descriptor->plane_info, descriptor->pixel_stride);
-	AML_GRALLOC_LOGI("%s: heap_name:%s width:%d height:%d size:%zu stride:%d format=0x%" PRIx64 " usage=0x%" PRIx64,
-			__FUNCTION__, heap_name, descriptor->width, descriptor->height, descriptor->size, descriptor->pixel_stride,
-			descriptor->hal_format, usage);
+	AML_GRALLOC_LOGI("%s: layer_name:%s heap_name:%s width:%d height:%d size:%zu stride:%d format=0x%" PRIx64 " usage=0x%" PRIx64,
+			__FUNCTION__, reinterpret_cast<const char*>(descriptor->name.data()), heap_name, descriptor->width,
+			descriptor->height, descriptor->size, descriptor->pixel_stride, descriptor->hal_format, usage);
 
 	if (nullptr == private_handle)
 	{
@@ -672,6 +680,161 @@ void am_gralloc_set_buffer_flags(
 
 }
 
+#ifdef ALLOC_FROM_SAME_HEAP
+struct dmaheap_device
+{
+	static void close_dmaheap()
+	{
+		dmaheap_device &dev = get_inst();
+		if (dev.dmaheap_dev > 0)
+		{
+			::close(dev.dmaheap_dev);
+			dev.dmaheap_dev = -1;
+		}
+	}
+
+	static int get_dmaheap()
+	{
+		dmaheap_device &dev = get_inst();
+		if (dev.dmaheap_dev < 0)
+		{
+			dev.dmaheap_dev = open("/dev/dmaheap", O_RDONLY | O_CLOEXEC);
+		}
+
+		if (dev.dmaheap_dev < 0)
+		{
+			return -1;
+		}
+		return dev.dmaheap_dev;
+	}
+
+private:
+	int dmaheap_dev;
+	dmaheap_device()
+		:dmaheap_dev(-1)
+	{
+	}
+	~dmaheap_device()
+	{
+		close_dmaheap();
+	}
+
+	static dmaheap_device& get_inst()
+	{
+		static dmaheap_device dev;
+		return dev;
+	}
+};
+
+static size_t get_cma_free_size()
+{
+	int dmaheap_fd = dmaheap_device::get_dmaheap();
+	if (dmaheap_fd < 0)
+	{
+		AML_GRALLOC_LOGD("%s, get_dmaheap failed, maybe dmaheap not exists. dmaheap_fd=%d",
+				__func__, dmaheap_fd);
+		return (size_t)~0U;
+	}
+
+	struct meson_cma_heap_info data;
+	strcpy(data.heap_name, "heap-gfx");
+
+	int ret = ioctl(dmaheap_fd, MESON_CMA_HEAP_IOC_GET_INFO, &data);
+	if (ret < 0)
+	{
+		AML_GRALLOC_LOGD("%s: ioctl failed with code %d: %s",
+			 __func__, ret, strerror(errno));
+		return (size_t)~0U;
+	}
+
+	return data.num_of_free_bytes;
+}
+#endif
+
+bool am_gralloc_pick_heap_gfx(const buffer_descriptor_t *descriptor, uint64_t usage)
+{
+	if (usage & (GRALLOC_USAGE_SW_WRITE_MASK | GRALLOC_USAGE_SW_READ_MASK))
+		return false;
+#ifdef ALLOC_FROM_SAME_HEAP
+	const int BUFFER_COUNT_PER_LAYER = 3;
+	// If the three buffers of a certain layer have not been fully applied for more than 5 seconds,
+	// it is mandatory to clear them from the layers.
+	const uint64_t FORCE_REMOVE_TIME = 5000000000;
+
+	std::string layer_name{reinterpret_cast<const char*>(descriptor->name.data())};
+	if (layer_name.empty())
+		return true;
+
+	// workaround for some layers name like "ImageReader-xxxx-[0-9]++"  delete digit rear,
+	// and consider them as the same layer
+	{
+		size_t i = layer_name.length();
+		while ((--i > 0) && isdigit(layer_name.at(i))) ;
+
+		if (layer_name.at(i) == '-')
+			layer_name.resize(i + 1);
+	}
+
+	static std::unordered_map<std::string, struct aml_gralloc_layer_info> layers;
+	uint64_t time_stamp = (uint64_t)systemTime(SYSTEM_TIME_MONOTONIC);
+	size_t free_size = get_cma_free_size();
+	AML_GRALLOC_LOGD("%s: free_size = %zu", __func__, free_size);
+	//If the node does not exist, then to maintain compatibility, it also returns true.
+	if ((size_t)~0U == free_size)
+		return true;
+
+	for (auto layer : layers)
+	{
+		if (time_stamp - layer.second.time_stamp >= FORCE_REMOVE_TIME)
+		{
+			layers.erase(layer.first);
+			AML_GRALLOC_LOGD("%s: layer(%s) has no update for long time.", __func__, layer.first.c_str());
+		}
+	}
+
+	auto it = layers.find(layer_name);
+	if (it != layers.end())
+	{
+		bool pick_heap_gfx = it->second.pick_heap_gfx;
+		if (--it->second.count == 0)
+			layers.erase(it);
+		else
+			it->second.time_stamp = time_stamp;
+
+		AML_GRALLOC_LOGD("%s: The buffer of layer (%s) was%spreviously allocated form heap-gfx.",
+			__func__, layer_name.c_str(), (pick_heap_gfx ? " " : " not "));
+		return pick_heap_gfx;
+	}
+
+	// Used to calculate the remaining buffer size to be allocated.
+	size_t wait_alloc_size = 0;
+	for (auto layer : layers)
+	{
+		wait_alloc_size += (layer.second.count * layer.second.size);
+	}
+
+	AML_GRALLOC_LOGD("%s: wait_alloc_size = %zu, layer name is %s, free_size = %zu, %zu layers to be allocated",
+		__func__, wait_alloc_size, layer_name.c_str(), free_size, layers.size());
+	if ((wait_alloc_size < free_size) && (free_size - wait_alloc_size >= descriptor->size * BUFFER_COUNT_PER_LAYER))
+	{
+		layers.insert({layer_name, {.count = BUFFER_COUNT_PER_LAYER - 1,
+									.size = descriptor->size,
+									.time_stamp = time_stamp,
+									.pick_heap_gfx = true}});
+		return true;
+	}
+
+	layers.insert({layer_name, {.count = BUFFER_COUNT_PER_LAYER - 1,
+								.size = 0,
+								.time_stamp = time_stamp,
+								.pick_heap_gfx = false}});
+	return false;
+#else
+	(void)descriptor;
+	return true;
+#endif
+}
+
 enum dma_buf_heap am_gralloc_pick_dma_buf_heap(
 	const buffer_descriptor_t *descriptor, uint64_t usage)
 {
@@ -722,14 +885,18 @@ enum dma_buf_heap am_gralloc_pick_dma_buf_heap(
 
 		if (usage & GRALLOC_USAGE_HW_COMPOSER)
 		{
-			if ( (descriptor->width <= max_composer_buf_width) &&
+			if (
+#ifdef ALLOC_FROM_SAME_HEAP
+				(descriptor->width == max_composer_buf_width) &&
+				(descriptor->height == max_composer_buf_height) &&
+#else
+				(descriptor->width <= max_composer_buf_width) &&
 				(descriptor->height <= max_composer_buf_height) &&
+#endif
 				(!is_android_yuv_format(descriptor->hal_format)))
 			{
-				if (usage & (GRALLOC_USAGE_SW_WRITE_MASK | GRALLOC_USAGE_SW_READ_MASK))
-					return dma_buf_heap::system;
-				else
-					return dma_buf_heap::physically_contiguous_gfx;
+				return am_gralloc_pick_heap_gfx(descriptor, usage)
+					? dma_buf_heap::physically_contiguous_gfx : dma_buf_heap::system;
 			}
 		}
  #else
