@@ -479,6 +479,7 @@ bool is_android_yuv_format(int req_format)
 	case HAL_PIXEL_FORMAT_RAW_OPAQUE:
 	case HAL_PIXEL_FORMAT_BLOB:
 	case HAL_PIXEL_FORMAT_IMPLEMENTATION_DEFINED:
+	case HAL_PIXEL_FORMAT_YCBCR_P010:
 		rval = true;
 		break;
 	}

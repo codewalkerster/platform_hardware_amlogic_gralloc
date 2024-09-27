@@ -174,7 +174,7 @@ ndk::ScopedAStatus allocator::isSupported(const BufferDescriptorInfo &in_descrip
 	{
 		if (!allocator_supports_protected_memory(&grallocDescriptor))
 		{
-			MALI_GRALLOC_LOGV("Protected memory allocation for the given description will not succeed.");
+			MALI_GRALLOC_LOGV("Protected memory allocation for the given description will not succeed for format(%" PRIu64 ").", grallocDescriptor.hal_format);
 			*out_result = false;
 			return ndk::ScopedAStatus::ok();
 		}
