@@ -461,8 +461,8 @@ const format_ip_support_t formats_ip_support[] = {
 		.dpu_rd = F_LIN | F_AFBC,
 		.dpu_wr = F_LIN,
 		.dpu_aeu_wr = F_AFBC,
-		.vpu_rd = F_NONE,
-		.vpu_wr = F_NONE,
+		.vpu_rd = F_LIN,
+		.vpu_wr = F_LIN,
 		.cam_wr = F_NONE,
 	},
 	{
