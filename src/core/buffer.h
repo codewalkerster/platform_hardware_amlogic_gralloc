@@ -417,12 +417,14 @@ struct gralloc_decoder_para {
 	uint32_t w_align;
 	uint32_t h_align;
 	uint32_t size;
+	uint32_t compress;
 	gralloc_decoder_para()
 		: width{0}
 		, height{0}
 		, w_align{0}
 		, h_align{0}
 		, size{0}
+		, compress{0}
 	{
 	}
 	bool valid_wh()

@@ -30,6 +30,7 @@ struct uvm_decoder_para {
 	uint32_t w_align{0};
 	uint32_t h_align{0};
 	uint32_t size{0};
+	uint32_t compress{0};
 	std::string to_str()
 	{
 		std::stringstream ss;
@@ -38,6 +39,7 @@ struct uvm_decoder_para {
 		   << "),w_align=" << w_align
 		   << ",h_align=" << h_align
 		   << ",size=" << size
+		   << ",compress=" << compress
 		   << "]";
 		return ss.str();
 	}

@@ -148,6 +148,7 @@ bool am_gralloc_get_para_from_node(uint32_t slot_id, struct gralloc_decoder_para
     para->w_align = uvm_para.w_align;
     para->h_align = uvm_para.h_align;
     para->size    = uvm_para.size;
+    para->compress    = uvm_para.compress;
     return true;
 }
 

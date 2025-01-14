@@ -583,11 +583,15 @@ static int am_gralloc_exec_uvm_policy(
 		if (usage & GRALLOC_USAGE_PRIVATE_3)
 			agu->uvm_flag |= UVM_FBC_DEC;
 
-		if (am_gralloc_is_video_decoder_OSD_buffer_usage(usage) ||
+		if (!bufDescriptor->decoder_para.compress ||
+			am_gralloc_is_video_decoder_OSD_buffer_usage(usage) ||
 			am_gralloc_is_omx_osd_extend_usage(usage) ||
 			(am_gralloc_is_video_decoder_full_buffer_usage(usage) &&
 			bufDescriptor->hal_format == MALI_GRALLOC_FORMAT_INTERNAL_P010))
+		{
+			AML_GRALLOC_LOGD("--%s uvm skip realloc\n", __FUNCTION__);
 			agu->uvm_flag |= UVM_SKIP_REALLOC;
+		}
 
 		if (bufDescriptor->decoder_para.w_align != 0)
 			aligned_bit = bufDescriptor->decoder_para.w_align;

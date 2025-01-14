@@ -842,6 +842,9 @@ void am_gralloc_set_parameters(uint32_t slot_id, am_gralloc_decode_para para_map
             case GRALLOC_DECODE_PARA_SIZE:
                 uvm_para.size = para.second;
                 break;
+            case GRALLOC_DECODE_PARA_COMPRESS:
+                uvm_para.compress = para.second;
+                break;
             default:
                 ALOGW("%s: parameter not supported! %u", __func__, para.first);
                 break;
