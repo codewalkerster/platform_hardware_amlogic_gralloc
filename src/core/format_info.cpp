@@ -138,10 +138,7 @@ const std::vector<format_info_t> formats = {
 		.hsub = 2, .vsub = 2, .align_w = 2, .align_h = 2, ALIGN_W_CPU_DEFAULT,
 		.tile_size = 1, .has_alpha = false, .is_rgb = false, .is_yuv = true,
 		.afbc = true, .linear = true, .yuv_transform = false, .flex = true, .block_linear = true, .afrc = true,
-		.permitted_usage = add_universal_usages(
-		GRALLOC_USAGE_HW_TEXTURE | GRALLOC_USAGE_HW_RENDER | GRALLOC_USAGE_HW_COMPOSER |
-		GRALLOC_USAGE_DECODER | GRALLOC_USAGE_HW_VIDEO_ENCODER | GRALLOC_USAGE_HW_FB |
-		GRALLOC_USAGE_FRONTBUFFER | GRALLOC_USAGE_CURSOR),
+		.permitted_usage = add_universal_usages(STANDARD_USAGE),
 	},
 	{
 		.id = MALI_GRALLOC_FORMAT_INTERNAL_NV21,
@@ -558,7 +555,7 @@ const format_ip_support_t formats_ip_support[] = {
 		.dpu_aeu_wr = F_NONE,
 		.vpu_rd = F_LIN,
 		.vpu_wr = F_LIN | F_AFBC | F_BL_YUV,
-		.cam_wr = F_NONE,
+		.cam_wr = F_LIN,
 	},
 	{
 		.id = MALI_GRALLOC_FORMAT_INTERNAL_NV21,
