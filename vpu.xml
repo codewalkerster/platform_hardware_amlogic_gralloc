@@ -1,6 +1,6 @@
 <capabilities version="0.2">
     <ip_capabilities ip="VPU">
-        <feature name="FORMAT_R10G10B10A2" permission="NO" />
+        <feature name="FORMAT_R10G10B10A2" permission="RW" />
         <feature name="FORMAT_R16G16B16A16_FLOAT" permission="NO" />
         <feature name="FORMAT_R10G10B10A10" permission="NO" />
         <feature name="AFBC_16X16" permission="NO" />
