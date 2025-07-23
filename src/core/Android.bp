@@ -18,18 +18,40 @@ package {
     default_applicable_licenses: ["hardware_amlogic_license"],
 }
 
+soong_config_module_type {
+    name: "core_cc_defaults",
+    module_type: "cc_defaults",
+    config_namespace: "arm_gralloc",
+    variables: [
+        "is_utgard",
+    ],
+    properties: [
+        "srcs",
+        "cflags",
+    ],
+}
+
+soong_config_string_variable {
+    name: "is_utgard",
+    values: [
+        "true",
+        "false",
+    ],
+}
+
+
+
 filegroup {
     name: "arm_gralloc_core_defaults_srcs",
     srcs: [
         "buffer_access.cpp",
         "buffer_allocation.cpp",
         "formats.cpp",
-        "format_info.cpp",
         "drm_utils.cpp",
     ],
 }
 
-cc_defaults {
+core_cc_defaults {
     name: "arm_gralloc_core_defaults",
     defaults: [
         "arm_gralloc_defaults",
@@ -38,6 +60,27 @@ cc_defaults {
     srcs: [
         ":arm_gralloc_core_defaults_srcs",
     ],
+    soong_config_variables: {
+        is_utgard: {
+            false: {
+                srcs: [
+                    "format_info.cpp",
+                ],
+                cflags: [
+                    "-DIS_UTGARD=0",
+                ],
+            },
+            true: {
+                srcs: [
+                    "format_info_utgard.cpp",
+                ],
+                cflags: [
+                    "-DIS_UTGARD=1",
+                ],
+            },
+        },
+
+    },
     include_dirs: [
         "hardware/amlogic/gralloc/amlogic",
     ],
@@ -73,6 +116,7 @@ cc_library_static {
     defaults: [
         "arm_gralloc_core_defaults",
         "arm_gralloc_version_defaults",
+        "arm_gralloc_config_defaults",
     ],
 }
 

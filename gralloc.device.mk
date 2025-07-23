@@ -41,6 +41,17 @@ GRALLOC_AML_EXTEND?=1
 
 ifeq ($(GRALLOC_AML_EXTEND),1)
 BOARD_RESOLUTION_RATIO ?= 1080
+HWC_PRIMARY_FRAMEBUFFER_WIDTH ?= 1920
+HWC_PRIMARY_FRAMEBUFFER_HEIGHT ?= 1080
+HWC_EXTEND_FRAMEBUFFER_WIDTH ?= 0
+HWC_EXTEND_FRAMEBUFFER_HEIGHT ?= 0
+HWC_DISPLAY_NUM ?= 1
+endif
+
+ifeq ($(GPU_ARCH),utgard)
+IS_UTGARD=true
+else
+IS_UTGARD=false
 endif
 
 AML_ALLOC_SCANOUT_FOR_COMPOSE ?=0
@@ -63,6 +74,12 @@ $(call soong_config_set,arm_gralloc,gralloc_hwc_fb_disable_afbc,$(GRALLOC_HWC_FB
 
 $(call soong_config_set,arm_gralloc,gralloc_target_product,$(TARGET_PRODUCT))
 $(call soong_config_set,arm_gralloc,board_resolution,v$(BOARD_RESOLUTION_RATIO))
+$(call soong_config_set,arm_gralloc,framebuffer_width,v$(HWC_PRIMARY_FRAMEBUFFER_WIDTH))
+$(call soong_config_set,arm_gralloc,framebuffer_height,v$(HWC_PRIMARY_FRAMEBUFFER_HEIGHT))
+$(call soong_config_set,arm_gralloc,extend_width,v$(HWC_EXTEND_FRAMEBUFFER_WIDTH))
+$(call soong_config_set,arm_gralloc,extend_height,v$(HWC_EXTEND_FRAMEBUFFER_HEIGHT))
+$(call soong_config_set,arm_gralloc,display_num,v$(HWC_DISPLAY_NUM))
+$(call soong_config_set,arm_gralloc,is_utgard,$(IS_UTGARD))
 
 # Retrieve the directory of Gralloc module
 LOCAL_MODULE_MAKEFILE := $(lastword $(MAKEFILE_LIST)))

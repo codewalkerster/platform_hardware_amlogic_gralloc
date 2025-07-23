@@ -59,6 +59,11 @@ soong_config_module_type {
         "gralloc_hwc_force_bgra_8888",
         "gralloc_hwc_fb_disable_afbc",
         "board_resolution",
+        "framebuffer_width",
+        "framebuffer_height",
+        "extend_width",
+        "extend_height",
+        "display_num",
     ],
     properties: [
         "cflags",
@@ -82,6 +87,52 @@ soong_config_string_variable {
     ],
 }
 
+soong_config_string_variable {
+    name: "framebuffer_width",
+	values: [
+        "v1280",
+        "v1920",
+        "v3840",
+    ],
+}
+
+soong_config_string_variable {
+    name: "framebuffer_height",
+	values: [
+        "v720",
+        "v1080",
+        "v2160",
+    ],
+}
+
+soong_config_string_variable {
+    name: "extend_width",
+	values: [
+        "v0",
+        "v1280",
+        "v1920",
+        "v3840",
+    ],
+}
+
+soong_config_string_variable {
+    name: "extend_height",
+	values: [
+        "v0",
+        "v720",
+        "v1080",
+        "v2160",
+    ],
+}
+
+soong_config_string_variable {
+    name: "display_num",
+	values: [
+        "v1",
+        "v2",
+    ],
+}
+
 arm_gralloc_config_cc_defaults {
     name: "arm_gralloc_config_defaults",
     product_variables: {
@@ -94,6 +145,96 @@ arm_gralloc_config_cc_defaults {
             cflags: [
                 "-DGRALLOC_HWC_FORCE_BGRA_8888=1",
             ],
+        },
+        framebuffer_width: {
+            v1280: {
+            cflags: [
+                "-DHWC_PRIMARY_FRAMEBUFFER_WIDTH=1280",
+            ],
+            },
+            v1920: {
+            cflags: [
+                "-DHWC_PRIMARY_FRAMEBUFFER_WIDTH=1920",
+            ],
+            },
+            v3840: {
+            cflags: [
+                "-DHWC_PRIMARY_FRAMEBUFFER_WIDTH=3840",
+            ],
+            },
+        },
+        framebuffer_height: {
+            v720: {
+            cflags: [
+                "-DHWC_PRIMARY_FRAMEBUFFER_HEIGHT=720",
+            ],
+            },
+            v1080: {
+            cflags: [
+                "-DHWC_PRIMARY_FRAMEBUFFER_HEIGHT=1080",
+            ],
+            },
+            v2160: {
+            cflags: [
+                "-DHWC_PRIMARY_FRAMEBUFFER_HEIGHT=2160",
+            ],
+            },
+        },
+        extend_width: {
+            v0: {
+            cflags: [
+                "-DHWC_EXTEND_FRAMEBUFFER_WIDTH=0",
+            ],
+            },
+            v1280: {
+            cflags: [
+                "-DHWC_EXTEND_FRAMEBUFFER_WIDTH=1280",
+            ],
+            },
+            v1920: {
+            cflags: [
+                "-DHWC_EXTEND_FRAMEBUFFER_WIDTH=1920",
+            ],
+            },
+            v3840: {
+            cflags: [
+                "-DHWC_EXTEND_FRAMEBUFFER_WIDTH=3840",
+            ],
+            },
+        },
+        extend_height: {
+            v0: {
+            cflags: [
+                "-DHWC_EXTEND_FRAMEBUFFER_HEIGHT=0",
+            ],
+            },
+            v720: {
+            cflags: [
+                "-DHWC_EXTEND_FRAMEBUFFER_HEIGHT=720",
+            ],
+            },
+            v1080: {
+            cflags: [
+                "-DHWC_EXTEND_FRAMEBUFFER_HEIGHT=1080",
+            ],
+            },
+            v2160: {
+            cflags: [
+                "-DHWC_EXTEND_FRAMEBUFFER_HEIGHT=2160",
+            ],
+            },
+        },
+        display_num: {
+            v1: {
+            cflags: [
+                "-DHWC_DISPLAY_NUM=1",
+            ],
+            },
+            v2: {
+            cflags: [
+                "-DHWC_DISPLAY_NUM=2",
+            ],
+            },
         },
         gralloc_hwc_fb_disable_afbc: {
             cflags: [

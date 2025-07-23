@@ -37,7 +37,8 @@
 #include "am_gralloc_internal.h"
 #define AFBC_PIXELS_PER_BLOCK 256
 #define AFBC_HEADER_BUFFER_BYTES_PER_BLOCKENTRY 16
-
+//VT color buffer use heap-fb,width:384 height:180
+#define TWO_EXT_FB_BUFFER_SIZE_UPPER 303200
 /*
  * Get a global unique ID
  */
@@ -902,6 +903,40 @@ int mali_gralloc_derive_format_and_size(buffer_descriptor_t *descriptor)
 	return 0;
 }
 
+//To solve the problem of memory fragmentation, when the resolution of the requested fb buffer is 720p, a size of 1080p is also allocated.
+//The system will allocate two additional fb buffers of size 303104, and the size of these buffers will remain unchanged.
+//Meanwhile, for projects with a resolution of 720p itself, the size of the fb buffer will remain unchanged.
+static void set_fixed_buffer_size(buffer_descriptor_t *descriptor)
+{
+	uint32_t used_width = 0;
+	uint32_t used_height = 0;
+	if (HWC_DISPLAY_NUM == 1) {
+		used_width = HWC_PRIMARY_FRAMEBUFFER_WIDTH;
+		used_height = HWC_PRIMARY_FRAMEBUFFER_HEIGHT;
+	}
+	else if (HWC_DISPLAY_NUM == 2) {
+		if (HWC_PRIMARY_FRAMEBUFFER_WIDTH*HWC_PRIMARY_FRAMEBUFFER_HEIGHT > HWC_EXTEND_FRAMEBUFFER_WIDTH*HWC_EXTEND_FRAMEBUFFER_HEIGHT) {
+			used_width = HWC_EXTEND_FRAMEBUFFER_WIDTH;
+			used_height = HWC_EXTEND_FRAMEBUFFER_HEIGHT;
+		}
+		else {
+			used_width = HWC_PRIMARY_FRAMEBUFFER_WIDTH;
+			used_height = HWC_PRIMARY_FRAMEBUFFER_HEIGHT;
+		}
+	}
+
+	//The Mali 450 GPU does not use AFBC compression, so there's no need to multiply by 1.09 when calculating the size. For other GPUs,
+	//need to multiply by 1.09 when calculating the size.
+	if ((descriptor->height <= used_height) && (descriptor->width <= used_width) && (descriptor->size > TWO_EXT_FB_BUFFER_SIZE_UPPER)) {
+		if (IS_UTGARD) {
+			descriptor->size = used_height*used_width*4;
+		}
+		else {
+			descriptor->size = used_height*used_width*4*1.09;
+		}
+	}
+}
+
 unique_private_handle mali_gralloc_buffer_allocate(buffer_descriptor_t *descriptor)
 {
 	int err = mali_gralloc_derive_format_and_size(descriptor);
@@ -910,6 +945,10 @@ unique_private_handle mali_gralloc_buffer_allocate(buffer_descriptor_t *descript
 		MALI_GRALLOC_LOGE("buffer allocation failed: %s", strerror(-err));
 		return nullptr;
 	}
+	//sometimes need to set fixed buffer size to avoid memory fragmentation
+	uint64_t usage = descriptor->consumer_usage | descriptor->producer_usage;
+	if (usage & GRALLOC_USAGE_HW_FB)
+		set_fixed_buffer_size(descriptor);
 	auto handle = allocator_allocate(descriptor);
 	if (handle == nullptr)
 	{
