@@ -1313,7 +1313,7 @@ static internal_format_t select_best_format(const buffer_descriptor_t &descripto
 	/* Determine producers and consumers. */
 	auto producers = get_producers(usage);
 	const auto consumers = get_consumers(usage);
-
+#if !GRALLOC_AML_EXTEND
 	if (producers.empty() && consumers.empty())
 	{
 		MALI_GRALLOC_LOGE("Producer and consumer not identified.");
@@ -1323,7 +1323,7 @@ static internal_format_t select_best_format(const buffer_descriptor_t &descripto
 	{
 		MALI_GRALLOC_LOGV("Producer or consumer not identified.");
 	}
-
+#endif
 	/* If no producers are identified, assume the CPU is the producer. */
 	if (producers.empty())
 	{
